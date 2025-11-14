@@ -23,9 +23,13 @@ export const Input: React.FC<InputProps> = ({
           w-full px-4 py-2 border rounded-lg
           focus:outline-none focus:ring-2 focus:ring-blue-500
           transition-colors
+          placeholder:text-gray-400 placeholder:opacity-100
           ${error ? 'border-red-500' : 'border-gray-300'}
           ${className}
         `}
+        style={{
+          WebkitTextFillColor: 'inherit',
+        }}
         {...props}
       />
       {error && (
