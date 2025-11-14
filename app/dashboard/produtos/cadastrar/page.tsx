@@ -44,6 +44,7 @@ export default function CadastrarProdutoPage() {
     description?: string;
     price?: string;
     variations?: string;
+    order?: string;
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -107,6 +108,10 @@ export default function CadastrarProdutoPage() {
       }
     }
 
+    if (!formData.order || Number(formData.order) < 1) {
+      newErrors.order = 'A ordem deve ser maior ou igual a 1';
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -159,7 +164,13 @@ export default function CadastrarProdutoPage() {
 
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'radio' ? value : value,
+      [name]: type === 'checkbox' 
+        ? checked 
+        : type === 'radio' 
+          ? value
+          : type === 'number'
+            ? value === '' ? '' : Number(value) || ''
+            : value,
     }));
 
     // Limpa erro quando o usuário começa a digitar
@@ -323,10 +334,11 @@ export default function CadastrarProdutoPage() {
               label="Ordem *"
               name="order"
               type="number"
-              min="1"
+              min="0"
               value={formData.order}
               onChange={handleChange}
               placeholder="1"
+              error={errors.order}
               required
             />
 

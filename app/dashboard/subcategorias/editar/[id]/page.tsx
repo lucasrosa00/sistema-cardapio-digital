@@ -30,7 +30,7 @@ export default function EditarSubcategoriaPage() {
     active: true,
     order: 1,
   });
-  const [errors, setErrors] = useState<{ categoryId?: string; title?: string }>({});
+  const [errors, setErrors] = useState<{ categoryId?: string; title?: string; order?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categoryOptions = categories.map((cat) => ({
@@ -62,6 +62,10 @@ export default function EditarSubcategoriaPage() {
     }
 
     if (!formData.categoryId || !formData.title.trim()) {
+      return;
+    }
+    if (!formData.order || Number(formData.order) < 1) {
+      setErrors((prev) => ({ ...prev, order: 'A ordem deve ser maior ou igual a 1' }));
       return;
     }
 
@@ -98,7 +102,9 @@ export default function EditarSubcategoriaPage() {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'number' ? Number(value) || 1 : value,
+      [name]: type === 'number' 
+        ? value === '' ? '' : Number(value) || ''
+        : value,
     }));
     // Limpa erro quando o usuário começa a digitar
     if (errors[name as keyof typeof errors]) {
@@ -181,10 +187,11 @@ export default function EditarSubcategoriaPage() {
               label="Ordem *"
               name="order"
               type="number"
-              min="1"
+              min="0"
               value={formData.order}
               onChange={handleChange}
               placeholder="1"
+              error={errors.order}
               required
             />
 

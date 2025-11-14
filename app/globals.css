@@ -77,3 +77,37 @@ textarea:-webkit-autofill::placeholder {
   -webkit-box-shadow: 0 0 0px 1000px #1f2937 inset !important;
   box-shadow: 0 0 0px 1000px #1f2937 inset !important;
 }
+
+/* Fix para selects e options transparentes no Safari iOS */
+select {
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+  background-color: white !important;
+}
+
+select option {
+  color: #111827 !important;
+  background-color: white !important;
+}
+
+select:focus {
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+}
+
+/* Dark mode para selects */
+.dark select {
+  color: #f9fafb !important;
+  -webkit-text-fill-color: #f9fafb !important;
+  background-color: #1f2937 !important;
+}
+
+.dark select option {
+  color: #f9fafb !important;
+  background-color: #1f2937 !important;
+}
+
+.dark select:focus {
+  color: #f9fafb !important;
+  -webkit-text-fill-color: #f9fafb !important;
+}

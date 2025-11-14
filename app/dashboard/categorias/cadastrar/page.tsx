@@ -17,7 +17,7 @@ export default function CadastrarCategoriaPage() {
     active: true,
     order: 1,
   });
-  const [errors, setErrors] = useState<{ title?: string }>({});
+  const [errors, setErrors] = useState<{ title?: string; order?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -27,6 +27,10 @@ export default function CadastrarCategoriaPage() {
     // Validação
     if (!formData.title.trim()) {
       setErrors({ title: 'O título é obrigatório' });
+      return;
+    }
+    if (!formData.order || Number(formData.order) < 1) {
+      setErrors({ order: 'A ordem deve ser maior ou igual a 1' });
       return;
     }
 
@@ -64,7 +68,11 @@ export default function CadastrarCategoriaPage() {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) || 1 : value,
+      [name]: type === 'checkbox' 
+        ? checked 
+        : type === 'number' 
+          ? value === '' ? '' : Number(value) || ''
+          : value,
     }));
     // Limpa erro quando o usuário começa a digitar
     if (errors[name as keyof typeof errors]) {
@@ -105,10 +113,11 @@ export default function CadastrarCategoriaPage() {
               label="Ordem *"
               name="order"
               type="number"
-              min="1"
+              min="0"
               value={formData.order}
               onChange={handleChange}
               placeholder="1"
+              error={errors.order}
               required
             />
 
