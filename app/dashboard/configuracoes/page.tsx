@@ -6,7 +6,6 @@ import { useRestaurantConfigStore } from '@/store/restaurantConfigStore';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Switch } from '@/components/ui/Switch';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 
@@ -22,7 +21,6 @@ export default function ConfiguracoesPage() {
     restaurantName: '',
     mainColor: '#ff0000',
     logo: null as string | null,
-    darkMode: false,
   });
 
   const [errors, setErrors] = useState<{ restaurantName?: string }>({});
@@ -41,20 +39,10 @@ export default function ConfiguracoesPage() {
         restaurantName: config.restaurantName || restaurantName || '',
         mainColor: config.mainColor,
         logo: config.logo,
-        darkMode: config.darkMode,
       });
     }
   }, [restaurantId, restaurantName, getConfig, initializeConfig]);
 
-  // Aplicar dark mode globalmente quando mudar no formulário
-  useEffect(() => {
-    const root = document.documentElement;
-    if (formData.darkMode) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [formData.darkMode]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -83,7 +71,6 @@ export default function ConfiguracoesPage() {
         restaurantName: formData.restaurantName.trim(),
         mainColor: formData.mainColor,
         logo: formData.logo,
-        darkMode: formData.darkMode,
       });
 
       setSaved(true);
@@ -124,9 +111,9 @@ export default function ConfiguracoesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors">
+        <div className="bg-white rounded-lg shadow p-6">
           <div className="mb-6">
             <Button
               variant="secondary"
@@ -135,17 +122,17 @@ export default function ConfiguracoesPage() {
             >
               ← Voltar
             </Button>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-gray-900">
               Configurações do Restaurante
             </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-sm text-gray-600 mt-1">
               Personalize a identidade visual do seu cardápio digital
             </p>
           </div>
 
           {saved && (
-            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <p className="text-sm text-green-800 dark:text-green-200">
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800">
                 ✓ Configurações salvas com sucesso!
               </p>
             </div>
@@ -170,7 +157,7 @@ export default function ConfiguracoesPage() {
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Logo do Restaurante
               </label>
               
@@ -180,7 +167,7 @@ export default function ConfiguracoesPage() {
                     <img
                       src={formData.logo}
                       alt="Logo do restaurante"
-                      className="max-w-xs max-h-32 object-contain rounded-lg border border-gray-300 dark:border-gray-600"
+                      className="max-w-xs max-h-32 object-contain rounded-lg border border-gray-300"
                     />
                     <button
                       type="button"
@@ -190,7 +177,7 @@ export default function ConfiguracoesPage() {
                       ×
                     </button>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-gray-500">
                     Clique no × para remover o logo atual
                   </p>
                 </div>
@@ -203,20 +190,9 @@ export default function ConfiguracoesPage() {
               )}
             </div>
 
-            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <Switch
-                label="Modo Escuro"
-                checked={formData.darkMode}
-                onChange={(checked) => setFormData((prev) => ({ ...prev, darkMode: checked }))}
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-14">
-                Ative o modo escuro para uma experiência visual mais confortável
-              </p>
-            </div>
-
             {/* Preview da identidade visual */}
-            <div className="p-6 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+            <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="text-sm font-medium text-gray-700 mb-4">
                 Preview da Identidade Visual
               </h3>
               <div className="space-y-3">
@@ -239,7 +215,7 @@ export default function ConfiguracoesPage() {
                   className="h-2 rounded"
                   style={{ backgroundColor: formData.mainColor }}
                 />
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600">
                   Esta é uma prévia de como sua identidade visual aparecerá no cardápio.
                 </p>
               </div>

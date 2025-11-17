@@ -5,13 +5,11 @@ import { useState } from 'react';
 interface ProductImageCarouselProps {
   images: string[];
   productTitle: string;
-  darkMode: boolean;
 }
 
 export function ProductImageCarousel({
   images,
   productTitle,
-  darkMode,
 }: ProductImageCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 

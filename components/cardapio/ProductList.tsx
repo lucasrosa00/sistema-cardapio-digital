@@ -9,7 +9,6 @@ interface ProductListProps {
   subcategories: Subcategory[];
   selectedSubcategoryId: number | null;
   mainColor: string;
-  darkMode: boolean;
   formatPrice: (product: Product) => string;
 }
 
@@ -18,7 +17,6 @@ export function ProductList({
   subcategories,
   selectedSubcategoryId,
   mainColor,
-  darkMode,
   formatPrice,
 }: ProductListProps) {
   const subcategoryRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -54,7 +52,7 @@ export function ProductList({
   if (sortedSubcategoryIds.length === 0) {
     return (
       <div className="text-center py-12 px-4 sm:px-6 lg:px-8">
-        <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+        <p className="text-gray-600">
           Nenhum produto disponível.
         </p>
       </div>
@@ -84,7 +82,7 @@ export function ProductList({
               `}
               style={{
                 color: mainColor,
-                borderColor: isSelected ? mainColor : darkMode ? '#4b5563' : '#e5e7eb',
+                borderColor: isSelected ? mainColor : '#e5e7eb',
               }}
             >
               {subcategory?.title || 'Sem subcategoria'}
@@ -95,20 +93,13 @@ export function ProductList({
               {subcategoryProducts.map((product) => (
                 <div
                   key={product.id}
-                  className={`
-                    rounded-lg overflow-hidden transition-all
-                    ${darkMode
-                      ? 'bg-gray-800 border border-gray-700'
-                      : 'bg-white border border-gray-200'
-                    }
-                  `}
+                  className="rounded-lg overflow-hidden transition-all bg-white border border-gray-200"
                 >
                   {/* Imagens do Produto */}
                   {product.images && product.images.length > 0 && (
                     <ProductImageCarousel
                       images={product.images}
                       productTitle={product.title}
-                      darkMode={darkMode}
                     />
                   )}
 
@@ -117,11 +108,7 @@ export function ProductList({
                     <h4 className="text-lg font-semibold mb-2">
                       {product.title}
                     </h4>
-                    <p
-                      className={`text-sm mb-3 ${
-                        darkMode ? 'text-gray-300' : 'text-gray-600'
-                      }`}
-                    >
+                    <p className="text-sm mb-3 text-gray-600">
                       {product.description}
                     </p>
 
@@ -147,11 +134,7 @@ export function ProductList({
                               key={idx}
                               className="flex justify-between items-center"
                             >
-                              <span
-                                className={`text-sm ${
-                                  darkMode ? 'text-gray-300' : 'text-gray-700'
-                                }`}
-                              >
+                              <span className="text-sm text-gray-700">
                                 {variation.label}
                               </span>
                               <span

@@ -24,12 +24,10 @@ export default function CardapioPublicoPage() {
     restaurantName: string;
     mainColor: string;
     logo: string | null;
-    darkMode: boolean;
   }>({
     restaurantName: "Exemplo Restaurante",
     mainColor: "#ff0000",
     logo: null,
-    darkMode: false,
   });
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
@@ -68,15 +66,6 @@ export default function CardapioPublicoPage() {
     }
   }, [restaurantUrl, getCategoriesByRestaurant, getSubcategoriesByRestaurant, getProductsByRestaurant, getConfig, initializeConfig]);
 
-  // Aplicar dark mode
-  useEffect(() => {
-    const root = document.documentElement;
-    if (config.darkMode) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [config.darkMode]);
 
   // Resetar subcategoria selecionada quando categoria mudar
   useEffect(() => {
@@ -86,12 +75,12 @@ export default function CardapioPublicoPage() {
   // Se restaurante não encontrado
   if (!restaurantUser) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Restaurante não encontrado
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600">
             A URL "{restaurantUrl}" não corresponde a nenhum restaurante cadastrado.
           </p>
         </div>
@@ -140,19 +129,10 @@ export default function CardapioPublicoPage() {
   };
 
   return (
-    <div
-      className={`min-h-screen transition-colors ${
-        config.darkMode
-          ? 'bg-gray-900 text-white'
-          : 'bg-gray-50 text-gray-900'
-      }`}
-    >
+    <div className="min-h-screen bg-gray-50 text-gray-900">
       {/* Cabeçalho */}
       <header
-        className="sticky top-0 z-10 shadow-lg"
-        style={{
-          backgroundColor: config.darkMode ? '#1f2937' : '#ffffff',
-        }}
+        className="sticky top-0 z-10 shadow-lg bg-white"
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center gap-4">
@@ -170,11 +150,7 @@ export default function CardapioPublicoPage() {
               >
                 {config.restaurantName || 'Cardápio Digital'}
               </h1>
-              <p
-                className={`text-sm mt-1 ${
-                  config.darkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}
-              >
+              <p className="text-sm mt-1 text-gray-600">
                 Cardápio Digital
               </p>
             </div>
@@ -186,11 +162,7 @@ export default function CardapioPublicoPage() {
       <main className="max-w-6xl mx-auto py-8">
         {activeCategories.length === 0 ? (
           <div className="text-center py-12 px-4 sm:px-6 lg:px-8">
-            <p
-              className={`text-lg ${
-                config.darkMode ? 'text-gray-400' : 'text-gray-600'
-              }`}
-            >
+            <p className="text-lg text-gray-600">
               Nenhum item disponível no momento.
             </p>
           </div>
@@ -203,7 +175,6 @@ export default function CardapioPublicoPage() {
                 selectedCategoryId={selectedCategoryId}
                 onSelectCategory={handleSelectCategory}
                 mainColor={config.mainColor}
-                darkMode={config.darkMode}
               />
             </div>
 
@@ -215,7 +186,6 @@ export default function CardapioPublicoPage() {
                   selectedSubcategoryId={selectedSubcategoryId}
                   onSelectSubcategory={handleSelectSubcategory}
                   mainColor={config.mainColor}
-                  darkMode={config.darkMode}
                 />
               </div>
             )}
@@ -227,7 +197,6 @@ export default function CardapioPublicoPage() {
                 subcategories={filteredSubcategories}
                 selectedSubcategoryId={selectedSubcategoryId}
                 mainColor={config.mainColor}
-                darkMode={config.darkMode}
                 formatPrice={formatPrice}
               />
             )}
@@ -235,11 +204,7 @@ export default function CardapioPublicoPage() {
             {/* Mensagem quando não há produtos */}
             {selectedCategoryId && filteredProducts.length === 0 && (
               <div className="text-center py-12 px-4 sm:px-6 lg:px-8">
-                <p
-                  className={`text-lg ${
-                    config.darkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}
-                >
+                <p className="text-lg text-gray-600">
                   Nenhum produto disponível nesta categoria.
                 </p>
               </div>
@@ -249,11 +214,7 @@ export default function CardapioPublicoPage() {
       </main>
 
       {/* Rodapé */}
-      <footer
-        className={`mt-12 py-6 text-center ${
-          config.darkMode ? 'text-gray-400' : 'text-gray-600'
-        }`}
-      >
+      <footer className="mt-12 py-6 text-center text-gray-600">
         <p className="text-sm">
           © {new Date().getFullYear()} {config.restaurantName || 'Cardápio Digital'}
         </p>

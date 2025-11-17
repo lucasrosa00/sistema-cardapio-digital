@@ -7,7 +7,6 @@ interface CategoryTabsProps {
   selectedCategoryId: number | null;
   onSelectCategory: (categoryId: number) => void;
   mainColor: string;
-  darkMode: boolean;
 }
 
 export function CategoryTabs({
@@ -15,7 +14,6 @@ export function CategoryTabs({
   selectedCategoryId,
   onSelectCategory,
   mainColor,
-  darkMode,
 }: CategoryTabsProps) {
   return (
     <div className="w-full overflow-x-auto pb-2" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -35,8 +33,8 @@ export function CategoryTabs({
                 }
               `}
               style={{
-                backgroundColor: isSelected ? mainColor : darkMode ? '#374151' : '#f3f4f6',
-                color: isSelected ? '#ffffff' : darkMode ? '#e5e7eb' : '#374151',
+                backgroundColor: isSelected ? mainColor : '#f3f4f6',
+                color: isSelected ? '#ffffff' : '#374151',
               }}
             >
               {category.title}

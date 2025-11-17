@@ -5,7 +5,6 @@ export interface RestaurantConfig {
   restaurantName: string;
   mainColor: string;
   logo: string | null;
-  darkMode: boolean;
 }
 
 interface RestaurantConfigState {
@@ -20,7 +19,6 @@ const defaultConfig: RestaurantConfig = {
   restaurantName: "Exemplo Restaurante",
   mainColor: "#ff0000",
   logo: null,
-  darkMode: false,
 };
 
 export const useRestaurantConfigStore = create<RestaurantConfigState>()(

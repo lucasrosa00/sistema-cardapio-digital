@@ -7,7 +7,6 @@ interface SubcategoryListProps {
   selectedSubcategoryId: number | null;
   onSelectSubcategory: (subcategoryId: number) => void;
   mainColor: string;
-  darkMode: boolean;
 }
 
 export function SubcategoryList({
@@ -15,7 +14,6 @@ export function SubcategoryList({
   selectedSubcategoryId,
   onSelectSubcategory,
   mainColor,
-  darkMode,
 }: SubcategoryListProps) {
   if (subcategories.length === 0) {
     return null;
@@ -38,8 +36,8 @@ export function SubcategoryList({
               }
             `}
             style={{
-              backgroundColor: isSelected ? mainColor : darkMode ? '#4b5563' : '#e5e7eb',
-              color: isSelected ? '#ffffff' : darkMode ? '#d1d5db' : '#4b5563',
+              backgroundColor: isSelected ? mainColor : '#e5e7eb',
+              color: isSelected ? '#ffffff' : '#4b5563',
               border: isSelected ? `2px solid ${mainColor}` : '2px solid transparent',
             }}
           >
