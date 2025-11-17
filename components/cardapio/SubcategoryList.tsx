@@ -20,7 +20,7 @@ export function SubcategoryList({
   }
 
   return (
-    <div className="flex flex-wrap gap-3 px-4 sm:px-6 lg:px-8 py-4">
+    <div className="flex flex-wrap gap-3 px-4 sm:px-6 lg:px-8 py-0 sm:py-4">
       {subcategories.map((subcategory) => {
         const isSelected = selectedSubcategoryId === subcategory.id;
         return (

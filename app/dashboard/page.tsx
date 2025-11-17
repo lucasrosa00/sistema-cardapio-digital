@@ -1,50 +1,24 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import { useRestaurantConfigStore } from '@/store/restaurantConfigStore';
-import { Button } from '@/components/ui/Button';
 
 export default function DashboardPage() {
   const router = useRouter();
   const restaurantName = useAuthStore((state) => state.restaurantName);
   const restaurantId = useAuthStore((state) => state.restaurantId);
-  const logout = useAuthStore((state) => state.logout);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/login');
-    }
-  }, [isAuthenticated, router]);
-
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
-
-  if (!isAuthenticated()) {
-    return null;
-  }
-
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50 min-h-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Dashboard
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Bem-vindo, {restaurantName}!
-              </p>
-            </div>
-            <Button variant="secondary" onClick={handleLogout}>
-              Sair
-            </Button>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Dashboard
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Bem-vindo, {restaurantName}!
+            </p>
           </div>
 
           <div className="border-t border-gray-200 pt-6">

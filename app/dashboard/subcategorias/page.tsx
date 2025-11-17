@@ -43,9 +43,9 @@ export default function SubcategoriasPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50 min-h-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <div className="mb-4">
               <Button
@@ -108,8 +108,8 @@ export default function SubcategoriasPage() {
           </div>
 
           {/* Tabela */}
-          <div className="overflow-x-auto -mx-6 px-6" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <table className="min-w-full divide-y divide-gray-200" >
+          <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

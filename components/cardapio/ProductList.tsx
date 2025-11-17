@@ -76,10 +76,7 @@ export function ProductList({
           >
             {/* Título da Subcategoria */}
             <h3
-              className={`
-                text-xl md:text-2xl font-bold mb-4 pb-2 border-b-2
-                ${isSelected ? 'underline' : ''}
-              `}
+              className="text-xl md:text-2xl font-bold mb-4 pb-2 border-b-2"
               style={{
                 color: mainColor,
                 borderColor: isSelected ? mainColor : '#e5e7eb',

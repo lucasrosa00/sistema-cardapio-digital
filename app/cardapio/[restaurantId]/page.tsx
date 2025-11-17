@@ -169,7 +169,7 @@ export default function CardapioPublicoPage() {
         ) : (
           <>
             {/* Categorias - Row Horizontal Scrollável */}
-            <div className="mb-6">
+            <div className="mb-2 sm:mb-6">
               <CategoryTabs
                 categories={activeCategories}
                 selectedCategoryId={selectedCategoryId}
@@ -180,7 +180,7 @@ export default function CardapioPublicoPage() {
 
             {/* Subcategorias */}
             {selectedCategoryId && filteredSubcategories.length > 0 && (
-              <div className="mb-6">
+              <div className="mb-2 sm:mb-6">
                 <SubcategoryList
                   subcategories={filteredSubcategories}
                   selectedSubcategoryId={selectedSubcategoryId}
