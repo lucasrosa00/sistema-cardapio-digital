@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useProductsStore } from '@/store/productsStore';
 import { useCategoriesStore } from '@/store/categoriesStore';
@@ -30,6 +30,11 @@ export default function EditarProdutoPage() {
   const subcategories = restaurantId ? getSubcategoriesByRestaurant(restaurantId) : [];
   const product = products.find((prod) => prod.id === id);
 
+  // Calcula a maior ordem atual (global, todos os produtos do restaurante)
+  const maxOrder = products.length === 0 
+    ? 1 
+    : Math.max(...products.map(prod => prod.order || 0));
+
   const [formData, setFormData] = useState({
     categoryId: '',
     subcategoryId: '',
@@ -40,7 +45,7 @@ export default function EditarProdutoPage() {
     variations: [] as ProductVariation[],
     images: [] as string[],
     active: true,
-    order: 1,
+    order: '1',
   });
 
   const [errors, setErrors] = useState<{
@@ -69,6 +74,18 @@ export default function EditarProdutoPage() {
     label: sub.title,
   }));
 
+  // Gera as opções do select de ordem: de 1 até maxOrder
+  const orderOptions = useMemo(() => {
+    const options = [];
+    for (let i = 1; i <= maxOrder; i++) {
+      options.push({
+        value: String(i),
+        label: String(i),
+      });
+    }
+    return options;
+  }, [maxOrder]);
+
   useEffect(() => {
     if (product) {
       setFormData({
@@ -81,7 +98,7 @@ export default function EditarProdutoPage() {
         variations: product.variations || [],
         images: product.images || [],
         active: product.active,
-        order: product.order || 1,
+        order: String(product.order || 1),
       });
     }
   }, [product]);
@@ -137,8 +154,9 @@ export default function EditarProdutoPage() {
       }
     }
 
-    if (!formData.order || Number(formData.order) < 1) {
-      newErrors.order = 'A ordem deve ser maior ou igual a 1';
+    const selectedOrder = Number(formData.order);
+    if (!selectedOrder || selectedOrder < 1) {
+      newErrors.order = 'Selecione uma ordem válida';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -166,7 +184,7 @@ export default function EditarProdutoPage() {
         priceType: formData.priceType,
         active: formData.active,
         images: formData.images,
-        order: Number(formData.order) || 1,
+        order: selectedOrder,
       };
 
       if (formData.priceType === 'unique') {
@@ -204,7 +222,7 @@ export default function EditarProdutoPage() {
             : value,
     }));
 
-    // Limpa erro quando o usuário começa a digitar
+    // Limpa erro quando o usuário começa a digitar/selecionar
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -382,14 +400,12 @@ export default function EditarProdutoPage() {
               />
             </div>
 
-            <Input
+            <Select
               label="Ordem *"
               name="order"
-              type="number"
-              min="0"
               value={formData.order}
               onChange={handleChange}
-              placeholder="1"
+              options={orderOptions}
               error={errors.order}
               required
             />

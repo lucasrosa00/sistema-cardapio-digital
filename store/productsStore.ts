@@ -21,31 +21,97 @@ export const useProductsStore = create<ProductsState>()(
       filterActive: null,
       setFilterActive: (value) => set({ filterActive: value }),
       addProduct: (product, restaurantId) => {
-        const newId = Math.max(...get().products.map(p => p.id), 0) + 1;
-        // Se não tiver order definido, pega o maior order da subcategoria + 1
-        const subcategoryProducts = get().products.filter(
-          p => p.restaurantId === restaurantId && p.subcategoryId === product.subcategoryId
+        const state = get();
+        const newId = Math.max(...state.products.map(p => p.id), 0) + 1;
+        const restaurantProducts = state.products.filter(
+          p => p.restaurantId === restaurantId
         );
-        const maxOrder = subcategoryProducts.length > 0 
-          ? Math.max(...subcategoryProducts.map(p => p.order || 0))
-          : 0;
+        const newOrder = product.order !== undefined ? product.order : 
+          (restaurantProducts.length > 0 
+            ? Math.max(...restaurantProducts.map(p => p.order || 0)) + 1
+            : 1);
+
+        // Reordenação automática: shift para cima os itens que ocupem a ordem selecionada ou acima
+        const reorderedProducts = restaurantProducts.map((prod) => {
+          if (prod.order >= newOrder) {
+            return { ...prod, order: prod.order + 1 };
+          }
+          return prod;
+        });
+
+        // Adiciona o novo produto
+        const newProduct = {
+          ...product,
+          id: newId,
+          restaurantId,
+          images: product.images || [],
+          active: product.active !== undefined ? product.active : true,
+          order: newOrder,
+        };
+
+        // Atualiza todos os produtos: mantém os de outros restaurantes e atualiza os do restaurante atual
+        const otherRestaurantProducts = state.products.filter(
+          p => p.restaurantId !== restaurantId
+        );
         set({
-          products: [...get().products, { 
-            ...product, 
-            id: newId,
-            restaurantId,
-            images: product.images || [],
-            active: product.active !== undefined ? product.active : true,
-            order: product.order !== undefined ? product.order : maxOrder + 1,
-          }],
+          products: [...otherRestaurantProducts, ...reorderedProducts, newProduct],
         });
       },
       updateProduct: (id, updates) => {
-        set({
-          products: get().products.map((prod) =>
-            prod.id === id ? { ...prod, ...updates } : prod
-          ),
-        });
+        const state = get();
+        const productToUpdate = state.products.find(p => p.id === id);
+        
+        if (!productToUpdate) return;
+
+        const restaurantId = productToUpdate.restaurantId;
+        const oldOrder = productToUpdate.order;
+        const newOrder = updates.order !== undefined ? updates.order : oldOrder;
+
+        // Se a ordem mudou, precisa reordenar (ordenação global)
+        if (oldOrder !== newOrder) {
+          // Pega todos os produtos do restaurante exceto o que está sendo editado
+          const restaurantProducts = state.products.filter(
+            p => p.restaurantId === restaurantId && p.id !== id
+          );
+          
+          // Reordena os produtos afetados
+          const reorderedProducts = restaurantProducts.map((prod) => {
+            if (newOrder < oldOrder) {
+              // Movendo para cima: shift para baixo os itens entre newOrder e oldOrder (exclusive)
+              if (prod.order >= newOrder && prod.order < oldOrder) {
+                return { ...prod, order: prod.order + 1 };
+              }
+            } else {
+              // Movendo para baixo: shift para cima os itens entre oldOrder e newOrder (exclusive)
+              if (prod.order > oldOrder && prod.order <= newOrder) {
+                return { ...prod, order: prod.order - 1 };
+              }
+            }
+            return prod;
+          });
+
+          // Atualiza o produto sendo editado com a nova ordem
+          const updatedProduct = { ...productToUpdate, ...updates };
+
+          // Atualiza todos os produtos: mantém os de outros restaurantes e atualiza os do restaurante atual
+          const otherRestaurantProducts = state.products.filter(
+            p => p.restaurantId !== restaurantId
+          );
+          set({
+            products: [
+              ...otherRestaurantProducts,
+              ...reorderedProducts,
+              updatedProduct
+            ],
+          });
+        } else {
+          // Ordem não mudou, apenas atualiza o produto
+          set({
+            products: state.products.map((prod) =>
+              prod.id === id ? { ...prod, ...updates } : prod
+            ),
+          });
+        }
       },
       deleteProduct: (id) => {
         set({

@@ -1,24 +1,55 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCategoriesStore } from '@/store/categoriesStore';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 
 export default function CadastrarCategoriaPage() {
   const router = useRouter();
   const restaurantId = useAuthStore((state) => state.restaurantId);
   const addCategory = useCategoriesStore((state) => state.addCategory);
-  const [formData, setFormData] = useState({
-    title: '',
-    active: true,
-    order: 1,
+  const { getCategoriesByRestaurant } = useCategoriesStore();
+  
+  const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
+  
+  // Calcula a maior ordem atual para as opções do select
+  const maxOrder = categories.length === 0 
+    ? 0 
+    : Math.max(...categories.map(c => c.order || 0));
+
+  // Inicializa o formData com a ordem inicial calculada uma única vez
+  const [formData, setFormData] = useState(() => {
+    // Calcula a ordem inicial no momento da inicialização
+    const initialCategories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
+    const calculatedMaxOrder = initialCategories.length === 0 
+      ? 0 
+      : Math.max(...initialCategories.map(c => c.order || 0));
+    return {
+      title: '',
+      active: true,
+      order: String(calculatedMaxOrder + 1),
+    };
   });
   const [errors, setErrors] = useState<{ title?: string; order?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Gera as opções do select: de 1 até maxOrder + 1
+  const orderOptions = useMemo(() => {
+    const options = [];
+    const maxAvailableOrder = maxOrder + 1;
+    for (let i = 1; i <= maxAvailableOrder; i++) {
+      options.push({
+        value: String(i),
+        label: String(i),
+      });
+    }
+    return options;
+  }, [maxOrder]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,8 +60,9 @@ export default function CadastrarCategoriaPage() {
       setErrors({ title: 'O título é obrigatório' });
       return;
     }
-    if (!formData.order || Number(formData.order) < 1) {
-      setErrors({ order: 'A ordem deve ser maior ou igual a 1' });
+    const selectedOrder = Number(formData.order);
+    if (!selectedOrder || selectedOrder < 1) {
+      setErrors({ order: 'Selecione uma ordem válida' });
       return;
     }
 
@@ -51,7 +83,7 @@ export default function CadastrarCategoriaPage() {
           title: formData.title.trim(),
           active: formData.active,
           restaurantId,
-          order: Number(formData.order) || 1,
+          order: selectedOrder,
         },
         restaurantId
       );
@@ -64,8 +96,9 @@ export default function CadastrarCategoriaPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' 
@@ -74,7 +107,7 @@ export default function CadastrarCategoriaPage() {
           ? value === '' ? '' : Number(value) || ''
           : value,
     }));
-    // Limpa erro quando o usuário começa a digitar
+    // Limpa erro quando o usuário começa a digitar/selecionar
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -109,14 +142,12 @@ export default function CadastrarCategoriaPage() {
               required
             />
 
-            <Input
+            <Select
               label="Ordem *"
               name="order"
-              type="number"
-              min="0"
               value={formData.order}
               onChange={handleChange}
-              placeholder="1"
+              options={orderOptions}
               error={errors.order}
               required
             />

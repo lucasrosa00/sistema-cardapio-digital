@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useSubcategoriesStore } from '@/store/subcategoriesStore';
 import { useCategoriesStore } from '@/store/categoriesStore';
@@ -24,30 +24,49 @@ export default function EditarSubcategoriaPage() {
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const subcategory = subcategories.find((sub) => sub.id === id);
 
+  // Inicializa o formData
   const [formData, setFormData] = useState({
     categoryId: '',
     title: '',
     active: true,
-    order: 1,
+    order: '1',
   });
   const [errors, setErrors] = useState<{ categoryId?: string; title?: string; order?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const categoryOptions = categories.map((cat) => ({
-    value: cat.id,
-    label: cat.title,
-  }));
-
+  // Carrega os dados da subcategoria quando disponível
   useEffect(() => {
     if (subcategory) {
       setFormData({
         categoryId: String(subcategory.categoryId),
         title: subcategory.title,
         active: subcategory.active,
-        order: subcategory.order || 1,
+        order: String(subcategory.order || 1),
       });
     }
   }, [subcategory]);
+
+  // Calcula a maior ordem atual (global, todas as subcategorias do restaurante)
+  const maxOrder = subcategories.length === 0 
+    ? 1 
+    : Math.max(...subcategories.map(sub => sub.order || 0));
+
+  // Gera as opções do select de ordem baseado na categoria selecionada
+  const orderOptions = useMemo(() => {
+    const options = [];
+    for (let i = 1; i <= maxOrder; i++) {
+      options.push({
+        value: String(i),
+        label: String(i),
+      });
+    }
+    return options;
+  }, [maxOrder]);
+
+  const categoryOptions = categories.map((cat) => ({
+    value: cat.id,
+    label: cat.title,
+  }));
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -64,8 +83,9 @@ export default function EditarSubcategoriaPage() {
     if (!formData.categoryId || !formData.title.trim()) {
       return;
     }
-    if (!formData.order || Number(formData.order) < 1) {
-      setErrors((prev) => ({ ...prev, order: 'A ordem deve ser maior ou igual a 1' }));
+    const selectedOrder = Number(formData.order);
+    if (!selectedOrder || selectedOrder < 1) {
+      setErrors((prev) => ({ ...prev, order: 'Selecione uma ordem válida' }));
       return;
     }
 
@@ -85,7 +105,7 @@ export default function EditarSubcategoriaPage() {
         categoryId: Number(formData.categoryId),
         title: formData.title.trim(),
         active: formData.active,
-        order: Number(formData.order) || 1,
+        order: selectedOrder,
       });
 
       router.push('/dashboard/subcategorias');
@@ -183,14 +203,12 @@ export default function EditarSubcategoriaPage() {
               required
             />
 
-            <Input
+            <Select
               label="Ordem *"
               name="order"
-              type="number"
-              min="0"
               value={formData.order}
               onChange={handleChange}
-              placeholder="1"
+              options={orderOptions}
               error={errors.order}
               required
             />

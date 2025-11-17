@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useCategoriesStore } from '@/store/categoriesStore';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 
 export default function EditarCategoriaPage() {
@@ -20,10 +21,28 @@ export default function EditarCategoriaPage() {
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const category = categories.find((cat) => cat.id === id);
 
+  // Calcula a maior ordem atual (sem incluir +1, pois é edição)
+  const maxOrder = useMemo(() => {
+    if (categories.length === 0) return 1;
+    return Math.max(...categories.map(c => c.order || 0));
+  }, [categories]);
+
+  // Gera as opções do select: de 1 até maxOrder
+  const orderOptions = useMemo(() => {
+    const options = [];
+    for (let i = 1; i <= maxOrder; i++) {
+      options.push({
+        value: String(i),
+        label: String(i),
+      });
+    }
+    return options;
+  }, [maxOrder]);
+
   const [formData, setFormData] = useState({
     title: '',
     active: true,
-    order: 1,
+    order: '1',
   });
   const [errors, setErrors] = useState<{ title?: string; order?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,7 +52,7 @@ export default function EditarCategoriaPage() {
       setFormData({
         title: category.title,
         active: category.active,
-        order: category.order || 1,
+        order: String(category.order || 1),
       });
     }
   }, [category]);
@@ -47,8 +66,9 @@ export default function EditarCategoriaPage() {
       setErrors({ title: 'O título é obrigatório' });
       return;
     }
-    if (!formData.order || Number(formData.order) < 1) {
-      setErrors({ order: 'A ordem deve ser maior ou igual a 1' });
+    const selectedOrder = Number(formData.order);
+    if (!selectedOrder || selectedOrder < 1) {
+      setErrors({ order: 'Selecione uma ordem válida' });
       return;
     }
 
@@ -67,7 +87,7 @@ export default function EditarCategoriaPage() {
       updateCategory(id, {
         title: formData.title.trim(),
         active: formData.active,
-        order: Number(formData.order) || 1,
+        order: selectedOrder,
       });
 
       router.push('/dashboard/categorias');
@@ -78,8 +98,9 @@ export default function EditarCategoriaPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' 
@@ -88,7 +109,7 @@ export default function EditarCategoriaPage() {
           ? value === '' ? '' : Number(value) || ''
           : value,
     }));
-    // Limpa erro quando o usuário começa a digitar
+    // Limpa erro quando o usuário começa a digitar/selecionar
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -144,14 +165,12 @@ export default function EditarCategoriaPage() {
               required
             />
 
-            <Input
+            <Select
               label="Ordem *"
               name="order"
-              type="number"
-              min="0"
               value={formData.order}
               onChange={handleChange}
-              placeholder="1"
+              options={orderOptions}
               error={errors.order}
               required
             />

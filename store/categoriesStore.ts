@@ -21,27 +21,87 @@ export const useCategoriesStore = create<CategoriesState>()(
       filterActive: null,
       setFilterActive: (value) => set({ filterActive: value }),
       addCategory: (category, restaurantId) => {
-        const newId = Math.max(...get().categories.map(c => c.id), 0) + 1;
-        // Se não tiver order definido, pega o maior order do restaurante + 1
-        const restaurantCategories = get().categories.filter(c => c.restaurantId === restaurantId);
-        const maxOrder = restaurantCategories.length > 0 
-          ? Math.max(...restaurantCategories.map(c => c.order || 0))
-          : 0;
+        const state = get();
+        const newId = Math.max(...state.categories.map(c => c.id), 0) + 1;
+        const restaurantCategories = state.categories.filter(c => c.restaurantId === restaurantId);
+        const newOrder = category.order !== undefined ? category.order : 
+          (restaurantCategories.length > 0 
+            ? Math.max(...restaurantCategories.map(c => c.order || 0)) + 1
+            : 1);
+
+        // Reordenação automática: shift para cima os itens que ocupem a ordem selecionada ou acima
+        const reorderedCategories = restaurantCategories.map((cat) => {
+          if (cat.order >= newOrder) {
+            return { ...cat, order: cat.order + 1 };
+          }
+          return cat;
+        });
+
+        // Adiciona a nova categoria
+        const newCategory = {
+          ...category,
+          id: newId,
+          restaurantId,
+          order: newOrder,
+        };
+
+        // Atualiza todas as categorias: mantém as de outros restaurantes e atualiza as do restaurante atual
+        const otherRestaurantCategories = state.categories.filter(c => c.restaurantId !== restaurantId);
         set({
-          categories: [...get().categories, { 
-            ...category, 
-            id: newId, 
-            restaurantId,
-            order: category.order !== undefined ? category.order : maxOrder + 1
-          }],
+          categories: [...otherRestaurantCategories, ...reorderedCategories, newCategory],
         });
       },
       updateCategory: (id, updates) => {
-        set({
-          categories: get().categories.map((cat) =>
-            cat.id === id ? { ...cat, ...updates } : cat
-          ),
-        });
+        const state = get();
+        const categoryToUpdate = state.categories.find(c => c.id === id);
+        
+        if (!categoryToUpdate) return;
+
+        const restaurantId = categoryToUpdate.restaurantId;
+        const oldOrder = categoryToUpdate.order;
+        const newOrder = updates.order !== undefined ? updates.order : oldOrder;
+
+        // Se a ordem mudou, precisa reordenar
+        if (oldOrder !== newOrder) {
+          // Pega todas as categorias do restaurante exceto a que está sendo editada
+          const restaurantCategories = state.categories.filter(c => c.restaurantId === restaurantId && c.id !== id);
+          
+          // Reordena as categorias afetadas
+          const reorderedCategories = restaurantCategories.map((cat) => {
+            if (newOrder < oldOrder) {
+              // Movendo para cima: shift para baixo os itens entre newOrder e oldOrder (exclusive)
+              if (cat.order >= newOrder && cat.order < oldOrder) {
+                return { ...cat, order: cat.order + 1 };
+              }
+            } else {
+              // Movendo para baixo: shift para cima os itens entre oldOrder e newOrder (exclusive)
+              if (cat.order > oldOrder && cat.order <= newOrder) {
+                return { ...cat, order: cat.order - 1 };
+              }
+            }
+            return cat;
+          });
+
+          // Atualiza a categoria sendo editada com a nova ordem
+          const updatedCategory = { ...categoryToUpdate, ...updates };
+
+          // Atualiza todas as categorias: mantém as de outros restaurantes e atualiza as do restaurante atual
+          const otherRestaurantCategories = state.categories.filter(c => c.restaurantId !== restaurantId);
+          set({
+            categories: [
+              ...otherRestaurantCategories,
+              ...reorderedCategories,
+              updatedCategory
+            ],
+          });
+        } else {
+          // Ordem não mudou, apenas atualiza a categoria
+          set({
+            categories: state.categories.map((cat) =>
+              cat.id === id ? { ...cat, ...updates } : cat
+            ),
+          });
+        }
       },
       deleteCategory: (id) => {
         set({

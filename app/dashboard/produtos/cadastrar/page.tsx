@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProductsStore } from '@/store/productsStore';
 import { useCategoriesStore } from '@/store/categoriesStore';
@@ -20,21 +20,35 @@ export default function CadastrarProdutoPage() {
   const addProduct = useProductsStore((state) => state.addProduct);
   const { getCategoriesByRestaurant } = useCategoriesStore();
   const { getSubcategoriesByRestaurant } = useSubcategoriesStore();
+  const { getProductsByRestaurant } = useProductsStore();
   
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const subcategories = restaurantId ? getSubcategoriesByRestaurant(restaurantId) : [];
+  const allProducts = restaurantId ? getProductsByRestaurant(restaurantId) : [];
 
-  const [formData, setFormData] = useState({
-    categoryId: '',
-    subcategoryId: '',
-    title: '',
-    description: '',
-    priceType: 'unique' as 'unique' | 'variable',
-    price: '',
-    variations: [] as ProductVariation[],
-    images: [] as string[],
-    active: true,
-    order: 1,
+  // Calcula a maior ordem atual (global, todos os produtos do restaurante)
+  const maxOrder = allProducts.length === 0 
+    ? 0 
+    : Math.max(...allProducts.map(prod => prod.order || 0));
+
+  // Inicializa o formData com a ordem inicial calculada uma única vez
+  const [formData, setFormData] = useState(() => {
+    const initialProducts = restaurantId ? getProductsByRestaurant(restaurantId) : [];
+    const calculatedMaxOrder = initialProducts.length === 0 
+      ? 0 
+      : Math.max(...initialProducts.map(prod => prod.order || 0));
+    return {
+      categoryId: '',
+      subcategoryId: '',
+      title: '',
+      description: '',
+      priceType: 'unique' as 'unique' | 'variable',
+      price: '',
+      variations: [] as ProductVariation[],
+      images: [] as string[],
+      active: true,
+      order: String(calculatedMaxOrder + 1),
+    };
   });
 
   const [errors, setErrors] = useState<{
@@ -62,6 +76,30 @@ export default function CadastrarProdutoPage() {
     value: sub.id,
     label: sub.title,
   }));
+
+  // Gera as opções do select de ordem: de 1 até maxOrder + 1
+  const orderOptions = useMemo(() => {
+    const options = [];
+    const maxAvailableOrder = maxOrder + 1;
+    for (let i = 1; i <= maxAvailableOrder; i++) {
+      options.push({
+        value: String(i),
+        label: String(i),
+      });
+    }
+    return options;
+  }, [maxOrder]);
+
+  // Atualiza a ordem inicial quando os produtos mudarem (ordenação global)
+  useEffect(() => {
+    const calculatedMaxOrder = allProducts.length === 0 
+      ? 0 
+      : Math.max(...allProducts.map(prod => prod.order || 0));
+    setFormData(prev => ({
+      ...prev,
+      order: String(calculatedMaxOrder + 1),
+    }));
+  }, [allProducts.length]); // Usa apenas o length para evitar loop
 
   // Reset subcategoria quando categoria mudar
   useEffect(() => {
@@ -108,8 +146,9 @@ export default function CadastrarProdutoPage() {
       }
     }
 
-    if (!formData.order || Number(formData.order) < 1) {
-      newErrors.order = 'A ordem deve ser maior ou igual a 1';
+    const selectedOrder = Number(formData.order);
+    if (!selectedOrder || selectedOrder < 1) {
+      newErrors.order = 'Selecione uma ordem válida';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -131,7 +170,7 @@ export default function CadastrarProdutoPage() {
         priceType: formData.priceType,
         active: formData.active,
         images: formData.images,
-        order: Number(formData.order) || 1,
+        order: selectedOrder,
       };
 
       if (formData.priceType === 'unique') {
@@ -173,7 +212,7 @@ export default function CadastrarProdutoPage() {
             : value,
     }));
 
-    // Limpa erro quando o usuário começa a digitar
+    // Limpa erro quando o usuário começa a digitar/selecionar
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -330,14 +369,12 @@ export default function CadastrarProdutoPage() {
               />
             </div>
 
-            <Input
+            <Select
               label="Ordem *"
               name="order"
-              type="number"
-              min="0"
               value={formData.order}
               onChange={handleChange}
-              placeholder="1"
+              options={orderOptions}
               error={errors.order}
               required
             />

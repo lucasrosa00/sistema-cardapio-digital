@@ -21,29 +21,97 @@ export const useSubcategoriesStore = create<SubcategoriesState>()(
       filterActive: null,
       setFilterActive: (value) => set({ filterActive: value }),
       addSubcategory: (subcategory, restaurantId) => {
-        const newId = Math.max(...get().subcategories.map(s => s.id), 0) + 1;
-        // Se não tiver order definido, pega o maior order da categoria + 1
-        const categorySubcategories = get().subcategories.filter(
-          s => s.restaurantId === restaurantId && s.categoryId === subcategory.categoryId
+        const state = get();
+        const newId = Math.max(...state.subcategories.map(s => s.id), 0) + 1;
+        const restaurantSubcategories = state.subcategories.filter(
+          s => s.restaurantId === restaurantId
         );
-        const maxOrder = categorySubcategories.length > 0 
-          ? Math.max(...categorySubcategories.map(s => s.order || 0))
-          : 0;
+        const newOrder = subcategory.order !== undefined ? subcategory.order : 
+          (restaurantSubcategories.length > 0 
+            ? Math.max(...restaurantSubcategories.map(s => s.order || 0)) + 1
+            : 1);
+
+        // Reordenação automática: shift para cima os itens que ocupem a ordem selecionada ou acima
+        const reorderedSubcategories = restaurantSubcategories.map((sub) => {
+          if (sub.order >= newOrder) {
+            return { ...sub, order: sub.order + 1 };
+          }
+          return sub;
+        });
+
+        // Adiciona a nova subcategoria
+        const newSubcategory = {
+          ...subcategory,
+          id: newId,
+          restaurantId,
+          order: newOrder,
+        };
+
+        // Atualiza todas as subcategorias: mantém as de outros restaurantes e atualiza as do restaurante atual
+        const otherRestaurantSubcategories = state.subcategories.filter(
+          s => s.restaurantId !== restaurantId
+        );
         set({
-          subcategories: [...get().subcategories, { 
-            ...subcategory, 
-            id: newId, 
-            restaurantId,
-            order: subcategory.order !== undefined ? subcategory.order : maxOrder + 1
-          }],
+          subcategories: [...otherRestaurantSubcategories, ...reorderedSubcategories, newSubcategory],
         });
       },
       updateSubcategory: (id, updates) => {
-        set({
-          subcategories: get().subcategories.map((sub) =>
-            sub.id === id ? { ...sub, ...updates } : sub
-          ),
-        });
+        const state = get();
+        const subcategoryToUpdate = state.subcategories.find(s => s.id === id);
+        
+        if (!subcategoryToUpdate) return;
+
+        const restaurantId = subcategoryToUpdate.restaurantId;
+        const categoryId = updates.categoryId !== undefined ? updates.categoryId : subcategoryToUpdate.categoryId;
+        const oldOrder = subcategoryToUpdate.order;
+        const newOrder = updates.order !== undefined ? updates.order : oldOrder;
+        const oldCategoryId = subcategoryToUpdate.categoryId;
+
+        // Se a ordem mudou, precisa reordenar (ordenação global, não por categoria)
+        if (oldOrder !== newOrder) {
+          // Pega todas as subcategorias do restaurante exceto a que está sendo editada
+          const restaurantSubcategories = state.subcategories.filter(
+            s => s.restaurantId === restaurantId && s.id !== id
+          );
+          
+          // Reordena as subcategorias afetadas
+          const reorderedSubcategories = restaurantSubcategories.map((sub) => {
+            if (newOrder < oldOrder) {
+              // Movendo para cima: shift para baixo os itens entre newOrder e oldOrder (exclusive)
+              if (sub.order >= newOrder && sub.order < oldOrder) {
+                return { ...sub, order: sub.order + 1 };
+              }
+            } else {
+              // Movendo para baixo: shift para cima os itens entre oldOrder e newOrder (exclusive)
+              if (sub.order > oldOrder && sub.order <= newOrder) {
+                return { ...sub, order: sub.order - 1 };
+              }
+            }
+            return sub;
+          });
+
+          // Atualiza a subcategoria sendo editada com a nova ordem
+          const updatedSubcategory = { ...subcategoryToUpdate, ...updates };
+
+          // Atualiza todas as subcategorias: mantém as de outros restaurantes e atualiza as do restaurante atual
+          const otherRestaurantSubcategories = state.subcategories.filter(
+            s => s.restaurantId !== restaurantId
+          );
+          set({
+            subcategories: [
+              ...otherRestaurantSubcategories,
+              ...reorderedSubcategories,
+              updatedSubcategory
+            ],
+          });
+        } else {
+          // Ordem não mudou, apenas atualiza a subcategoria
+          set({
+            subcategories: state.subcategories.map((sub) =>
+              sub.id === id ? { ...sub, ...updates } : sub
+            ),
+          });
+        }
       },
       deleteSubcategory: (id) => {
         set({

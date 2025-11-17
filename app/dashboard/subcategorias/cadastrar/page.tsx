@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSubcategoriesStore } from '@/store/subcategoriesStore';
 import { useCategoriesStore } from '@/store/categoriesStore';
@@ -15,21 +15,56 @@ export default function CadastrarSubcategoriaPage() {
   const restaurantId = useAuthStore((state) => state.restaurantId);
   const addSubcategory = useSubcategoriesStore((state) => state.addSubcategory);
   const { getCategoriesByRestaurant } = useCategoriesStore();
+  const { getSubcategoriesByRestaurant } = useSubcategoriesStore();
   
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
-  const [formData, setFormData] = useState({
-    categoryId: '',
-    title: '',
-    active: true,
-    order: 1,
+  const allSubcategories = restaurantId ? getSubcategoriesByRestaurant(restaurantId) : [];
+
+  // Inicializa o formData
+  const [formData, setFormData] = useState(() => {
+    return {
+      categoryId: '',
+      title: '',
+      active: true,
+      order: '1',
+    };
   });
   const [errors, setErrors] = useState<{ categoryId?: string; title?: string; order?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Calcula a maior ordem atual (global, todas as subcategorias do restaurante)
+  const maxOrder = allSubcategories.length === 0 
+    ? 0 
+    : Math.max(...allSubcategories.map(sub => sub.order || 0));
 
   const categoryOptions = categories.map((cat) => ({
     value: cat.id,
     label: cat.title,
   }));
+
+  // Gera as opções do select de ordem baseado na categoria selecionada
+  const orderOptions = useMemo(() => {
+    const options = [];
+    const maxAvailableOrder = maxOrder + 1;
+    for (let i = 1; i <= maxAvailableOrder; i++) {
+      options.push({
+        value: String(i),
+        label: String(i),
+      });
+    }
+    return options;
+  }, [maxOrder]);
+
+  // Atualiza a ordem inicial quando as subcategorias mudarem (ordenação global)
+  useEffect(() => {
+    const calculatedMaxOrder = allSubcategories.length === 0 
+      ? 0 
+      : Math.max(...allSubcategories.map(sub => sub.order || 0));
+    setFormData(prev => ({
+      ...prev,
+      order: String(calculatedMaxOrder + 1),
+    }));
+  }, [allSubcategories.length]); // Usa apenas o length para evitar loop
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -46,8 +81,9 @@ export default function CadastrarSubcategoriaPage() {
     if (!formData.categoryId || !formData.title.trim()) {
       return;
     }
-    if (!formData.order || Number(formData.order) < 1) {
-      setErrors((prev) => ({ ...prev, order: 'A ordem deve ser maior ou igual a 1' }));
+    const selectedOrder = Number(formData.order);
+    if (!selectedOrder || selectedOrder < 1) {
+      setErrors((prev) => ({ ...prev, order: 'Selecione uma ordem válida' }));
       return;
     }
 
@@ -69,7 +105,7 @@ export default function CadastrarSubcategoriaPage() {
           title: formData.title.trim(),
           active: formData.active,
           restaurantId,
-          order: Number(formData.order) || 1,
+          order: selectedOrder,
         },
         restaurantId
       );
@@ -148,14 +184,12 @@ export default function CadastrarSubcategoriaPage() {
               required
             />
 
-            <Input
+            <Select
               label="Ordem *"
               name="order"
-              type="number"
-              min="0"
               value={formData.order}
               onChange={handleChange}
-              placeholder="1"
+              options={orderOptions}
               error={errors.order}
               required
             />
