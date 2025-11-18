@@ -31,7 +31,7 @@ export function ProductImageCarousel({
 
   return (
     <div className="relative w-full mb-4">
-      <div className="relative overflow-hidden rounded-lg" style={{ aspectRatio: '16/9' }}>
+      <div className="relative overflow-hidden rounded-lg" style={{ aspectRatio: '16/16' }}>
         <img
           src={images[currentIndex]}
           alt={`${productTitle} - Imagem ${currentIndex + 1}`}

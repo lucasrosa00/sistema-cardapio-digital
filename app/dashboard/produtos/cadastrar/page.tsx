@@ -366,7 +366,7 @@ export default function CadastrarProdutoPage() {
                 onImagesChange={(images) =>
                   setFormData((prev) => ({ ...prev, images }))
                 }
-                maxImages={5}
+                maxImages={10}
               />
             </div>
 

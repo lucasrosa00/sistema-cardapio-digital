@@ -28,6 +28,7 @@ export const useRestaurantConfigStore = create<RestaurantConfigState>()((set, ge
   configs: {},
   isLoading: false,
   getConfig: (restaurantId: number) => {
+    console.log('getConfig', restaurantId);
     const configs = get().configs;
     // Retorna null se não existir - deve chamar loadConfig primeiro
     return configs[restaurantId] || null;

@@ -397,7 +397,7 @@ export default function EditarProdutoPage() {
                 onImagesChange={(images) =>
                   setFormData((prev) => ({ ...prev, images }))
                 }
-                maxImages={5}
+                maxImages={10}
               />
             </div>
 
