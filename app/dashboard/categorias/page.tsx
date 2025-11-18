@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCategoriesStore } from '@/store/categoriesStore';
 import { useAuthStore } from '@/store/authStore';
@@ -15,7 +15,16 @@ export default function CategoriasPage() {
     filterActive,
     setFilterActive,
     deleteCategory,
+    loadCategories,
+    isLoading,
   } = useCategoriesStore();
+
+  // Carregar categorias ao montar o componente
+  useEffect(() => {
+    if (restaurantId) {
+      loadCategories();
+    }
+  }, [restaurantId, loadCategories]);
 
   const categories = restaurantId ? getFilteredCategories(restaurantId) : [];
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -25,10 +34,13 @@ export default function CategoriasPage() {
       return;
     }
     setDeletingId(id);
-    // Simula delay
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    deleteCategory(id);
-    setDeletingId(null);
+    try {
+      await deleteCategory(id);
+    } catch (error) {
+      alert('Erro ao excluir categoria. Tente novamente.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleEdit = (id: number) => {
@@ -123,7 +135,13 @@ export default function CategoriasPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {categories.length === 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                      Carregando...
+                    </td>
+                  </tr>
+                ) : categories.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
                       Nenhuma categoria encontrada

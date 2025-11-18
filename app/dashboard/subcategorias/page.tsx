@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSubcategoriesStore } from '@/store/subcategoriesStore';
 import { useCategoriesStore } from '@/store/categoriesStore';
@@ -16,8 +16,18 @@ export default function SubcategoriasPage() {
     filterActive,
     setFilterActive,
     deleteSubcategory,
+    loadSubcategories,
+    isLoading,
   } = useSubcategoriesStore();
-  const { getCategoriesByRestaurant } = useCategoriesStore();
+  const { getCategoriesByRestaurant, loadCategories } = useCategoriesStore();
+
+  // Carregar dados ao montar o componente
+  useEffect(() => {
+    if (restaurantId) {
+      loadSubcategories();
+      loadCategories();
+    }
+  }, [restaurantId, loadSubcategories, loadCategories]);
 
   const subcategories = restaurantId ? getFilteredSubcategories(restaurantId) : [];
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
@@ -33,9 +43,13 @@ export default function SubcategoriasPage() {
       return;
     }
     setDeletingId(id);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    deleteSubcategory(id);
-    setDeletingId(null);
+    try {
+      await deleteSubcategory(id);
+    } catch (error) {
+      alert('Erro ao excluir subcategoria. Tente novamente.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleEdit = (id: number) => {
@@ -133,7 +147,13 @@ export default function SubcategoriasPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {subcategories.length === 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                      Carregando...
+                    </td>
+                  </tr>
+                ) : subcategories.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                       Nenhuma subcategoria encontrada

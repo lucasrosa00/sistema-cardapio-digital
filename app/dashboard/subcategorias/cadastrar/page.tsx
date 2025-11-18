@@ -15,7 +15,7 @@ export default function CadastrarSubcategoriaPage() {
   const restaurantId = useAuthStore((state) => state.restaurantId);
   const addSubcategory = useSubcategoriesStore((state) => state.addSubcategory);
   const { getCategoriesByRestaurant } = useCategoriesStore();
-  const { getSubcategoriesByRestaurant } = useSubcategoriesStore();
+  const { getSubcategoriesByRestaurant, loadSubcategories } = useSubcategoriesStore();
   
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const allSubcategories = restaurantId ? getSubcategoriesByRestaurant(restaurantId) : [];
@@ -89,30 +89,32 @@ export default function CadastrarSubcategoriaPage() {
 
     setIsSubmitting(true);
 
-    // Simula delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     if (!restaurantId) {
       alert('Erro: Restaurante não identificado. Faça login novamente.');
       router.push('/login');
+      setIsSubmitting(false);
       return;
     }
 
     try {
-      addSubcategory(
+      await addSubcategory(
         {
           categoryId: Number(formData.categoryId),
           title: formData.title.trim(),
           active: formData.active,
-          restaurantId,
           order: selectedOrder,
+          restaurantId, // Adicionado para compatibilidade com a interface
         },
         restaurantId
       );
 
+      // Recarregar subcategorias para garantir sincronização
+      await loadSubcategories();
+
       router.push('/dashboard/subcategorias');
     } catch (error) {
       console.error('Erro ao cadastrar subcategoria:', error);
+      alert('Erro ao cadastrar subcategoria. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }

@@ -20,7 +20,7 @@ export default function EditarProdutoPage() {
   const id = Number(params.id);
   
   const restaurantId = useAuthStore((state) => state.restaurantId);
-  const { getProductsByRestaurant } = useProductsStore();
+  const { getProductsByRestaurant, loadProducts } = useProductsStore();
   const updateProduct = useProductsStore((state) => state.updateProduct);
   const { getCategoriesByRestaurant } = useCategoriesStore();
   const { getSubcategoriesByRestaurant } = useSubcategoriesStore();
@@ -172,9 +172,6 @@ export default function EditarProdutoPage() {
 
     setIsSubmitting(true);
 
-    // Simula delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     try {
       const productData: any = {
         categoryId: Number(formData.categoryId),
@@ -195,11 +192,15 @@ export default function EditarProdutoPage() {
         productData.price = undefined;
       }
 
-      updateProduct(id, productData);
+      await updateProduct(id, productData);
+
+      // Recarregar produtos para garantir sincronização
+      await loadProducts();
 
       router.push('/dashboard/produtos');
     } catch (error) {
       console.error('Erro ao atualizar produto:', error);
+      alert('Erro ao atualizar produto. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }

@@ -1,164 +1,280 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { Product } from '@/lib/mockData';
-import { mockProducts } from '@/lib/mockData';
+import { Product, ProductVariation } from '@/lib/mockData';
+import { productsService } from '@/lib/api/productsService';
+import type { ProductDto, ProductVariationDto } from '@/lib/api/types';
+
+// Função helper para converter ProductDto para Product
+const dtoToProduct = (dto: ProductDto): Product => ({
+  id: dto.id,
+  restaurantId: dto.restaurantId,
+  categoryId: dto.categoryId,
+  subcategoryId: dto.subcategoryId || 0,
+  title: dto.title || '',
+  description: dto.description || '',
+  priceType: (dto.priceType as 'unique' | 'variable') || 'unique',
+  price: dto.price || undefined,
+  variations: dto.variations?.map((v: ProductVariationDto) => ({
+    label: v.label || '',
+    price: v.price,
+  })) as ProductVariation[] | undefined,
+  images: dto.images || [],
+  active: dto.active,
+  order: dto.order,
+});
 
 interface ProductsState {
   products: Product[];
   filterActive: boolean | null;
+  isLoading: boolean;
   setFilterActive: (value: boolean | null) => void;
-  addProduct: (product: Omit<Product, 'id'>, restaurantId: number) => void;
-  updateProduct: (id: number, product: Partial<Product>) => void;
-  deleteProduct: (id: number) => void;
+  loadProducts: () => Promise<void>;
+  addProduct: (product: Omit<Product, 'id'>, restaurantId: number) => Promise<void>;
+  updateProduct: (id: number, product: Partial<Product>) => Promise<void>;
+  deleteProduct: (id: number) => Promise<void>;
   getFilteredProducts: (restaurantId: number) => Product[];
   getProductsByRestaurant: (restaurantId: number) => Product[];
 }
 
-export const useProductsStore = create<ProductsState>()(
-  persist(
-    (set, get) => ({
-      products: mockProducts,
-      filterActive: null,
-      setFilterActive: (value) => set({ filterActive: value }),
-      addProduct: (product, restaurantId) => {
-        const state = get();
-        const newId = Math.max(...state.products.map(p => p.id), 0) + 1;
-        const restaurantProducts = state.products.filter(
-          p => p.restaurantId === restaurantId
+export const useProductsStore = create<ProductsState>()((set, get) => ({
+  products: [],
+  filterActive: null,
+  isLoading: false,
+  setFilterActive: (value) => set({ filterActive: value }),
+  loadProducts: async () => {
+    set({ isLoading: true });
+    try {
+      const productsDto = await productsService.getAll();
+      const products = productsDto.map(dtoToProduct);
+      set({ products, isLoading: false });
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+  addProduct: async (product, restaurantId) => {
+    try {
+      // Se a ordem está sendo usada, precisa reordenar outros produtos
+      const restaurantProducts = get().products
+        .filter(p => p.restaurantId === restaurantId)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      const newOrder = product.order;
+      const productsToUpdate: Array<{ id: number; newOrder: number }> = [];
+
+      // Produtos com ordem >= newOrder precisam descer
+      restaurantProducts.forEach(prod => {
+        if (prod.order >= newOrder) {
+          productsToUpdate.push({ id: prod.id, newOrder: prod.order + 1 });
+        }
+      });
+
+      // Atualizar todos os produtos afetados
+      const updatePromises = productsToUpdate.map(({ id: prodId, newOrder: order }) =>
+        productsService.update(prodId, { order })
+      );
+
+      // Criar o novo produto
+      // Se priceType é 'variable', price deve ser null e variations deve ser enviado
+      // Se priceType é 'unique', variations deve ser null e price deve ser enviado
+      const createData: any = {
+        categoryId: product.categoryId,
+        subcategoryId: product.subcategoryId || null,
+        title: product.title,
+        description: product.description,
+        priceType: product.priceType,
+        images: product.images || [],
+        active: product.active,
+        order: newOrder,
+      };
+      console.log("product.priceType: ", product.priceType)
+      if (product.priceType === 'variable') {
+        // Produto com variações: price deve ser null, variations deve ser enviado
+        createData.price = null;
+        createData.variations = product.variations && product.variations.length > 0
+          ? product.variations.map((v) => ({
+            label: v.label || null,
+            price: v.price,
+          }))
+          : null;
+      } else {
+        // Produto com preço único: variations deve ser null, price deve ser enviado
+        createData.price = product.price || null;
+        createData.variations = null;
+      }
+
+      const createPromise = productsService.create(createData);
+      console.log("createPromise: ", createPromise)
+      // Executar todas as operações
+      const [newProductDto, ...updatedProducts] = await Promise.all([
+        createPromise,
+        ...updatePromises,
+      ]);
+
+      const newProduct = dtoToProduct(newProductDto);
+
+      // Atualizar o store
+      set((state) => {
+        const updatedMap = new Map(updatedProducts.map(dto => [dto.id, dtoToProduct(dto)]));
+        return {
+          products: [
+            ...state.products.map((prod) => {
+              const updated = updatedMap.get(prod.id);
+              return updated || prod;
+            }),
+            newProduct,
+          ],
+        };
+      });
+    } catch (error) {
+      console.error('Erro ao criar produto:', error);
+      throw error;
+    }
+  },
+  updateProduct: async (id, updates) => {
+    try {
+      const productToUpdate = get().products.find(p => p.id === id);
+      if (!productToUpdate) return;
+
+      // Se a ordem está sendo alterada, precisa reordenar outros produtos
+      if (updates.order !== undefined && updates.order !== productToUpdate.order) {
+        const restaurantId = productToUpdate.restaurantId;
+        const restaurantProducts = get().products
+          .filter(p => p.restaurantId === restaurantId && p.id !== id)
+          .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        const oldOrder = productToUpdate.order;
+        const newOrder = updates.order;
+
+        // Calcular novas ordens para todos os produtos
+        const productsToUpdate: Array<{ id: number; newOrder: number }> = [];
+
+        if (newOrder < oldOrder) {
+          // Movendo para cima: produtos entre newOrder e oldOrder-1 precisam descer
+          restaurantProducts.forEach(prod => {
+            if (prod.order >= newOrder && prod.order < oldOrder) {
+              productsToUpdate.push({ id: prod.id, newOrder: prod.order + 1 });
+            }
+          });
+        } else {
+          // Movendo para baixo: produtos entre oldOrder+1 e newOrder precisam subir
+          restaurantProducts.forEach(prod => {
+            if (prod.order > oldOrder && prod.order <= newOrder) {
+              productsToUpdate.push({ id: prod.id, newOrder: prod.order - 1 });
+            }
+          });
+        }
+
+        // Atualizar todos os produtos afetados
+        const updatePromises = productsToUpdate.map(({ id: prodId, newOrder: order }) =>
+          productsService.update(prodId, { order })
         );
-        const newOrder = product.order !== undefined ? product.order : 
-          (restaurantProducts.length > 0 
-            ? Math.max(...restaurantProducts.map(p => p.order || 0)) + 1
-            : 1);
 
-        // Reordenação automática: shift para cima os itens que ocupem a ordem selecionada ou acima
-        const reorderedProducts = restaurantProducts.map((prod) => {
-          if (prod.order >= newOrder) {
-            return { ...prod, order: prod.order + 1 };
-          }
-          return prod;
-        });
-
-        // Adiciona o novo produto
-        const newProduct = {
-          ...product,
-          id: newId,
-          restaurantId,
-          images: product.images || [],
-          active: product.active !== undefined ? product.active : true,
+        // Atualizar o produto principal
+        const updateData: any = {
+          categoryId: updates.categoryId !== undefined ? updates.categoryId : undefined,
+          subcategoryId: updates.subcategoryId !== undefined ? updates.subcategoryId : undefined,
+          title: updates.title !== undefined ? updates.title : undefined,
+          description: updates.description !== undefined ? updates.description : undefined,
+          priceType: updates.priceType !== undefined ? updates.priceType : undefined,
+          images: updates.images !== undefined ? updates.images : undefined,
+          active: updates.active !== undefined ? updates.active : undefined,
           order: newOrder,
         };
 
-        // Atualiza todos os produtos: mantém os de outros restaurantes e atualiza os do restaurante atual
-        const otherRestaurantProducts = state.products.filter(
-          p => p.restaurantId !== restaurantId
-        );
-        set({
-          products: [...otherRestaurantProducts, ...reorderedProducts, newProduct],
-        });
-      },
-      updateProduct: (id, updates) => {
-        const state = get();
-        const productToUpdate = state.products.find(p => p.id === id);
-        
-        if (!productToUpdate) return;
-
-        const restaurantId = productToUpdate.restaurantId;
-        const oldOrder = productToUpdate.order;
-        const newOrder = updates.order !== undefined ? updates.order : oldOrder;
-
-        // Se a ordem mudou, precisa reordenar (ordenação global)
-        if (oldOrder !== newOrder) {
-          // Pega todos os produtos do restaurante exceto o que está sendo editado
-          const restaurantProducts = state.products.filter(
-            p => p.restaurantId === restaurantId && p.id !== id
-          );
-          
-          // Reordena os produtos afetados
-          const reorderedProducts = restaurantProducts.map((prod) => {
-            if (newOrder < oldOrder) {
-              // Movendo para cima: shift para baixo os itens entre newOrder e oldOrder (exclusive)
-              if (prod.order >= newOrder && prod.order < oldOrder) {
-                return { ...prod, order: prod.order + 1 };
-              }
-            } else {
-              // Movendo para baixo: shift para cima os itens entre oldOrder e newOrder (exclusive)
-              if (prod.order > oldOrder && prod.order <= newOrder) {
-                return { ...prod, order: prod.order - 1 };
-              }
-            }
-            return prod;
-          });
-
-          // Atualiza o produto sendo editado com a nova ordem
-          const updatedProduct = { ...productToUpdate, ...updates };
-
-          // Atualiza todos os produtos: mantém os de outros restaurantes e atualiza os do restaurante atual
-          const otherRestaurantProducts = state.products.filter(
-            p => p.restaurantId !== restaurantId
-          );
-          set({
-            products: [
-              ...otherRestaurantProducts,
-              ...reorderedProducts,
-              updatedProduct
-            ],
-          });
+        // Se priceType está sendo atualizado, ajustar price e variations
+        const finalPriceType = updates.priceType !== undefined ? updates.priceType : productToUpdate.priceType;
+        if (finalPriceType === 'variable') {
+          updateData.price = null;
+          updateData.variations = updates.variations && updates.variations.length > 0
+            ? updates.variations.map((v) => ({
+              label: v.label || null,
+              price: v.price,
+            }))
+            : null;
         } else {
-          // Ordem não mudou, apenas atualiza o produto
-          set({
-            products: state.products.map((prod) =>
-              prod.id === id ? { ...prod, ...updates } : prod
-            ),
-          });
+          updateData.price = updates.price !== undefined ? updates.price : undefined;
+          updateData.variations = null;
         }
-      },
-      deleteProduct: (id) => {
-        set({
-          products: get().products.filter((prod) => prod.id !== id),
+
+        updatePromises.push(productsService.update(id, updateData));
+
+        // Executar todas as atualizações
+        const updatedProducts = await Promise.all(updatePromises);
+
+        // Atualizar o store com todos os produtos atualizados
+        set((state) => {
+          const updatedMap = new Map(updatedProducts.map(dto => [dto.id, dtoToProduct(dto)]));
+          return {
+            products: state.products.map((prod) => {
+              const updated = updatedMap.get(prod.id);
+              return updated || prod;
+            }),
+          };
         });
-      },
-      getProductsByRestaurant: (restaurantId) => {
-        const products = get().products.filter((prod) => prod.restaurantId === restaurantId);
-        // Ordenar por order
-        return products.sort((a, b) => (a.order || 0) - (b.order || 0));
-      },
-      getFilteredProducts: (restaurantId) => {
-        const { products } = get();
-        const filtered = products.filter((prod) => prod.restaurantId === restaurantId);
-        // Ordenar por order
-        return filtered.sort((a, b) => (a.order || 0) - (b.order || 0));
-      },
-    }),
-    {
-      name: 'products-storage',
-      migrate: (persistedState: any, version: number) => {
-        // Migração: adiciona restaurantId e order aos dados antigos ou reseta para mocks
-        if (persistedState?.products) {
-          const hasRestaurantId = persistedState.products.every((prod: any) => 'restaurantId' in prod);
-          const hasOrder = persistedState.products.every((prod: any) => 'order' in prod);
-          
-          if (!hasRestaurantId) {
-            return {
-              ...persistedState,
-              products: mockProducts,
-            };
-          }
-          
-          if (!hasOrder) {
-            // Adiciona order aos dados existentes
-            return {
-              ...persistedState,
-              products: persistedState.products.map((prod: any, index: number) => ({
-                ...prod,
-                order: prod.order !== undefined ? prod.order : index + 1,
-              })),
-            };
-          }
+      } else {
+        // Se não está alterando a ordem, atualizar normalmente
+        const updateData: any = {
+          categoryId: updates.categoryId !== undefined ? updates.categoryId : undefined,
+          subcategoryId: updates.subcategoryId !== undefined ? updates.subcategoryId : undefined,
+          title: updates.title !== undefined ? updates.title : undefined,
+          description: updates.description !== undefined ? updates.description : undefined,
+          priceType: updates.priceType !== undefined ? updates.priceType : undefined,
+          images: updates.images !== undefined ? updates.images : undefined,
+          active: updates.active !== undefined ? updates.active : undefined,
+          order: updates.order !== undefined ? updates.order : undefined,
+        };
+
+        // Se priceType está sendo atualizado, ajustar price e variations
+        const finalPriceType = updates.priceType !== undefined ? updates.priceType : productToUpdate.priceType;
+        if (finalPriceType === 'variable') {
+          updateData.price = null;
+          updateData.variations = updates.variations && updates.variations.length > 0
+            ? updates.variations.map((v) => ({
+              label: v.label || null,
+              price: v.price,
+            }))
+            : null;
+        } else {
+          updateData.price = updates.price !== undefined ? updates.price : undefined;
+          updateData.variations = null;
         }
-        return persistedState;
-      },
+
+        const updatedProductDto = await productsService.update(id, updateData);
+        const updatedProduct = dtoToProduct(updatedProductDto);
+
+        set((state) => ({
+          products: state.products.map((prod) =>
+            prod.id === id ? updatedProduct : prod
+          ),
+        }));
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar produto:', error);
+      throw error;
     }
-  )
-);
+  },
+  deleteProduct: async (id) => {
+    try {
+      await productsService.delete(id);
+      set((state) => ({
+        products: state.products.filter((prod) => prod.id !== id),
+      }));
+    } catch (error) {
+      console.error('Erro ao deletar produto:', error);
+      throw error;
+    }
+  },
+  getProductsByRestaurant: (restaurantId) => {
+    const products = get().products.filter((prod) => prod.restaurantId === restaurantId);
+    // Ordenar por order
+    return products.sort((a, b) => (a.order || 0) - (b.order || 0));
+  },
+  getFilteredProducts: (restaurantId) => {
+    const { products } = get();
+    const filtered = products.filter((prod) => prod.restaurantId === restaurantId);
+    // Ordenar por order
+    return filtered.sort((a, b) => (a.order || 0) - (b.order || 0));
+  },
+}));
 

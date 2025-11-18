@@ -16,7 +16,7 @@ export default function EditarSubcategoriaPage() {
   const id = Number(params.id);
   
   const restaurantId = useAuthStore((state) => state.restaurantId);
-  const { getSubcategoriesByRestaurant } = useSubcategoriesStore();
+  const { getSubcategoriesByRestaurant, loadSubcategories } = useSubcategoriesStore();
   const updateSubcategory = useSubcategoriesStore((state) => state.updateSubcategory);
   const { getCategoriesByRestaurant } = useCategoriesStore();
   
@@ -97,20 +97,21 @@ export default function EditarSubcategoriaPage() {
 
     setIsSubmitting(true);
 
-    // Simula delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     try {
-      updateSubcategory(id, {
+      await updateSubcategory(id, {
         categoryId: Number(formData.categoryId),
         title: formData.title.trim(),
         active: formData.active,
         order: selectedOrder,
       });
 
+      // Recarregar subcategorias para garantir sincronização
+      await loadSubcategories();
+
       router.push('/dashboard/subcategorias');
     } catch (error) {
       console.error('Erro ao atualizar subcategoria:', error);
+      alert('Erro ao atualizar subcategoria. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }

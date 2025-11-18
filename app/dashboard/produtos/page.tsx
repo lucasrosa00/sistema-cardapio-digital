@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProductsStore } from '@/store/productsStore';
 import { useCategoriesStore } from '@/store/categoriesStore';
@@ -15,9 +15,20 @@ export default function ProdutosPage() {
   const {
     getProductsByRestaurant,
     deleteProduct,
+    loadProducts,
+    isLoading,
   } = useProductsStore();
-  const { getCategoriesByRestaurant } = useCategoriesStore();
-  const { getSubcategoriesByRestaurant } = useSubcategoriesStore();
+  const { getCategoriesByRestaurant, loadCategories } = useCategoriesStore();
+  const { getSubcategoriesByRestaurant, loadSubcategories } = useSubcategoriesStore();
+
+  // Carregar dados ao montar o componente
+  useEffect(() => {
+    if (restaurantId) {
+      loadProducts();
+      loadCategories();
+      loadSubcategories();
+    }
+  }, [restaurantId, loadProducts, loadCategories, loadSubcategories]);
 
   const products = restaurantId ? getProductsByRestaurant(restaurantId) : [];
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
@@ -55,9 +66,13 @@ export default function ProdutosPage() {
       return;
     }
     setDeletingId(id);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    deleteProduct(id);
-    setDeletingId(null);
+    try {
+      await deleteProduct(id);
+    } catch (error) {
+      alert('Erro ao excluir produto. Tente novamente.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleEdit = (id: number) => {
@@ -121,7 +136,13 @@ export default function ProdutosPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {products.length === 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
+                      Carregando...
+                    </td>
+                  </tr>
+                ) : products.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                       Nenhum produto encontrado

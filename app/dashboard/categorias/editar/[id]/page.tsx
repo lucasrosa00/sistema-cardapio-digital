@@ -15,7 +15,7 @@ export default function EditarCategoriaPage() {
   const id = Number(params.id);
   
   const restaurantId = useAuthStore((state) => state.restaurantId);
-  const { getCategoriesByRestaurant } = useCategoriesStore();
+  const { getCategoriesByRestaurant, loadCategories } = useCategoriesStore();
   const updateCategory = useCategoriesStore((state) => state.updateCategory);
   
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
@@ -80,19 +80,20 @@ export default function EditarCategoriaPage() {
 
     setIsSubmitting(true);
 
-    // Simula delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     try {
-      updateCategory(id, {
+      await updateCategory(id, {
         title: formData.title.trim(),
         active: formData.active,
         order: selectedOrder,
       });
 
+      // Recarregar categorias para garantir sincronização
+      await loadCategories();
+
       router.push('/dashboard/categorias');
     } catch (error) {
       console.error('Erro ao atualizar categoria:', error);
+      alert('Erro ao atualizar categoria. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }

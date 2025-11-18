@@ -35,12 +35,6 @@ export interface Product {
   order: number;
 }
 
-export const mockCategories: Category[] = [
-];
-
-export const mockSubcategories: Subcategory[] = [
-];
-
-export const mockProducts: Product[] = [
-];
+// Arrays mockados removidos - dados agora vêm da API
+// Mantendo apenas as interfaces para compatibilidade
 

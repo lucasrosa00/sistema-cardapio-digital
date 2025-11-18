@@ -20,22 +20,22 @@ export default function CadastrarProdutoPage() {
   const addProduct = useProductsStore((state) => state.addProduct);
   const { getCategoriesByRestaurant } = useCategoriesStore();
   const { getSubcategoriesByRestaurant } = useSubcategoriesStore();
-  const { getProductsByRestaurant } = useProductsStore();
-  
+  const { getProductsByRestaurant, loadProducts } = useProductsStore();
+
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const subcategories = restaurantId ? getSubcategoriesByRestaurant(restaurantId) : [];
   const allProducts = restaurantId ? getProductsByRestaurant(restaurantId) : [];
 
   // Calcula a maior ordem atual (global, todos os produtos do restaurante)
-  const maxOrder = allProducts.length === 0 
-    ? 0 
+  const maxOrder = allProducts.length === 0
+    ? 0
     : Math.max(...allProducts.map(prod => prod.order || 0));
 
   // Inicializa o formData com a ordem inicial calculada uma única vez
   const [formData, setFormData] = useState(() => {
     const initialProducts = restaurantId ? getProductsByRestaurant(restaurantId) : [];
-    const calculatedMaxOrder = initialProducts.length === 0 
-      ? 0 
+    const calculatedMaxOrder = initialProducts.length === 0
+      ? 0
       : Math.max(...initialProducts.map(prod => prod.order || 0));
     return {
       categoryId: '',
@@ -92,8 +92,8 @@ export default function CadastrarProdutoPage() {
 
   // Atualiza a ordem inicial quando os produtos mudarem (ordenação global)
   useEffect(() => {
-    const calculatedMaxOrder = allProducts.length === 0 
-      ? 0 
+    const calculatedMaxOrder = allProducts.length === 0
+      ? 0
       : Math.max(...allProducts.map(prod => prod.order || 0));
     setFormData(prev => ({
       ...prev,
@@ -158,9 +158,6 @@ export default function CadastrarProdutoPage() {
 
     setIsSubmitting(true);
 
-    // Simula delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     try {
       const productData: any = {
         categoryId: Number(formData.categoryId),
@@ -184,12 +181,16 @@ export default function CadastrarProdutoPage() {
         router.push('/login');
         return;
       }
+      console.log("productData: ", productData)
+      await addProduct(productData, restaurantId);
 
-      addProduct(productData, restaurantId);
+      // Recarregar produtos para garantir sincronização
+      await loadProducts();
 
       router.push('/dashboard/produtos');
     } catch (error) {
       console.error('Erro ao cadastrar produto:', error);
+      alert('Erro ao cadastrar produto. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -203,9 +204,9 @@ export default function CadastrarProdutoPage() {
 
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' 
-        ? checked 
-        : type === 'radio' 
+      [name]: type === 'checkbox'
+        ? checked
+        : type === 'radio'
           ? value
           : type === 'number'
             ? value === '' ? '' : Number(value) || ''

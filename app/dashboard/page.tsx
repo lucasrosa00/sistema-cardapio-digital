@@ -1,12 +1,39 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { useRestaurantConfigStore } from '@/store/restaurantConfigStore';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const restaurantName = useAuthStore((state) => state.restaurantName);
   const restaurantId = useAuthStore((state) => state.restaurantId);
+  const restaurantNameFromAuth = useAuthStore((state) => state.restaurantName);
+  const getConfig = useRestaurantConfigStore((state) => state.getConfig);
+  const loadConfig = useRestaurantConfigStore((state) => state.loadConfig);
+  
+  const [restaurantName, setRestaurantName] = useState<string | null>(restaurantNameFromAuth);
+
+  // Carregar nome do restaurante da API ao montar
+  useEffect(() => {
+    if (restaurantId) {
+      loadConfig(restaurantId)
+        .then(() => {
+          const config = getConfig(restaurantId);
+          // Prioriza o nome da API, se não tiver usa o do authStore
+          if (config) {
+            setRestaurantName(config.restaurantName || restaurantNameFromAuth || 'Restaurante');
+          } else {
+            setRestaurantName(restaurantNameFromAuth || 'Restaurante');
+          }
+        })
+        .catch((error) => {
+          console.error('Erro ao carregar configuração:', error);
+          // Em caso de erro, usa o nome do authStore
+          setRestaurantName(restaurantNameFromAuth || 'Restaurante');
+        });
+    }
+  }, [restaurantId, restaurantNameFromAuth, loadConfig, getConfig]);
 
   return (
     <div className="bg-gray-50 min-h-full">
@@ -17,7 +44,7 @@ export default function DashboardPage() {
               Dashboard
             </h1>
             <p className="text-gray-600 mt-1">
-              Bem-vindo, {restaurantName}!
+              Bem-vindo, {restaurantName || 'Restaurante'}!
             </p>
           </div>
 

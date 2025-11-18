@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useRestaurantConfigStore } from '@/store/restaurantConfigStore';
@@ -14,21 +14,49 @@ export default function DashboardLayout({
   const router = useRouter();
   const restaurantId = useAuthStore((state) => state.restaurantId);
   const restaurantName = useAuthStore((state) => state.restaurantName);
+  const userLogin = useAuthStore((state) => state.userLogin);
+  const initializeUserLogin = useAuthStore((state) => state.initializeUserLogin);
   const logout = useAuthStore((state) => state.logout);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const getConfig = useRestaurantConfigStore((state) => state.getConfig);
-  const initializeConfig = useRestaurantConfigStore((state) => state.initializeConfig);
-
-  // Inicializar config se necessário
+  
+  // Inicializar userLogin do token se não existir (para usuários que já estavam logados)
   useEffect(() => {
-    if (restaurantId && restaurantName) {
-      initializeConfig(restaurantId, restaurantName);
+    if (!userLogin) {
+      initializeUserLogin();
     }
-  }, [restaurantId, restaurantName, initializeConfig]);
+  }, [userLogin, initializeUserLogin]);
+  const getConfig = useRestaurantConfigStore((state) => state.getConfig);
+  const loadConfig = useRestaurantConfigStore((state) => state.loadConfig);
+  // Reage às mudanças no store
+  const configs = useRestaurantConfigStore((state) => state.configs);
+  
+  // Carregar configurações da API ao montar
+  useEffect(() => {
+    if (restaurantId) {
+      loadConfig(restaurantId).catch((error) => {
+        console.error('Erro ao carregar configuração:', error);
+      });
+    }
+  }, [restaurantId, loadConfig]);
 
+  // Atualiza displayName e logo quando config mudar (reage às mudanças no store)
   const config = restaurantId ? getConfig(restaurantId) : null;
-  const displayName = config?.restaurantName || restaurantName || 'Restaurante';
-  const logo = config?.logo;
+  
+  // Debug: verificar o que está vindo
+  useEffect(() => {
+    if (config) {
+      console.log('Config carregada:', {
+        restaurantName: config.restaurantName,
+        mainColor: config.mainColor,
+        logo: config.logo ? 'existe' : 'null',
+      });
+    }
+  }, [config]);
+  
+  const displayName = config?.restaurantName && config.restaurantName.trim() !== ''
+    ? config.restaurantName
+    : (restaurantName || 'Restaurante');
+  const logo = config?.logo || null;
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -71,7 +99,7 @@ export default function DashboardLayout({
             <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
-                  {restaurantName || 'Usuário'}
+                  {userLogin || 'Usuário'}
                 </p>
               </div>
               <Button

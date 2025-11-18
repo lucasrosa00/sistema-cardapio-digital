@@ -13,7 +13,7 @@ export default function CadastrarCategoriaPage() {
   const router = useRouter();
   const restaurantId = useAuthStore((state) => state.restaurantId);
   const addCategory = useCategoriesStore((state) => state.addCategory);
-  const { getCategoriesByRestaurant } = useCategoriesStore();
+  const { getCategoriesByRestaurant, loadCategories } = useCategoriesStore();
   
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   
@@ -68,29 +68,31 @@ export default function CadastrarCategoriaPage() {
 
     setIsSubmitting(true);
 
-    // Simula delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     if (!restaurantId) {
       alert('Erro: Restaurante não identificado. Faça login novamente.');
       router.push('/login');
+      setIsSubmitting(false);
       return;
     }
 
     try {
-      addCategory(
+      await addCategory(
         {
           title: formData.title.trim(),
           active: formData.active,
-          restaurantId,
           order: selectedOrder,
+          restaurantId, // Adicionado para compatibilidade com a interface
         },
         restaurantId
       );
 
+      // Recarregar categorias para garantir sincronização
+      await loadCategories();
+
       router.push('/dashboard/categorias');
     } catch (error) {
       console.error('Erro ao cadastrar categoria:', error);
+      alert('Erro ao cadastrar categoria. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }

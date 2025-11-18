@@ -3,13 +3,12 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import { validateLogin } from '@/lib/mockUsers';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 
 export default function LoginPage() {
   const router = useRouter();
-  const login = useAuthStore((state) => state.login);
+  const loginWithApi = useAuthStore((state) => state.loginWithApi);
   const [formData, setFormData] = useState({
     login: '',
     password: '',
@@ -22,15 +21,10 @@ export default function LoginPage() {
     setError(null);
     setIsLoading(true);
 
-    // Simula um pequeno delay para melhor UX
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const user = validateLogin(formData.login, formData.password);
-
-    if (user) {
-      login(user.id, user.restaurantName);
+    try {
+      await loginWithApi(formData.login, formData.password);
       router.push('/dashboard');
-    } else {
+    } catch (error) {
       setError('Login ou senha incorretos. Tente novamente.');
       setIsLoading(false);
     }
@@ -98,15 +92,6 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-xs text-center text-gray-500">
-              Usuários de teste:
-            </p>
-            <div className="mt-2 text-xs text-center text-gray-400 space-y-1">
-              <p>Login: correa | Senha: 123</p>
-              <p>Login: napoli | Senha: 456</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

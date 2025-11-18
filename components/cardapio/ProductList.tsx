@@ -32,18 +32,25 @@ export function ProductList({
   }, [selectedSubcategoryId]);
 
   // Agrupar produtos por subcategoria
+  // Produtos sem subcategoria (subcategoryId === 0 ou null) vão para a chave 0
   const productsBySubcategory = products.reduce((acc, product) => {
-    if (!acc[product.subcategoryId]) {
-      acc[product.subcategoryId] = [];
+    const subcategoryId = product.subcategoryId || 0;
+    if (!acc[subcategoryId]) {
+      acc[subcategoryId] = [];
     }
-    acc[product.subcategoryId].push(product);
+    acc[subcategoryId].push(product);
     return acc;
   }, {} as Record<number, Product[]>);
 
   // Ordenar subcategorias por ordem
+  // Produtos sem subcategoria (id === 0) aparecem primeiro
   const sortedSubcategoryIds = Object.keys(productsBySubcategory)
     .map(Number)
     .sort((a, b) => {
+      // Produtos sem subcategoria (0) sempre aparecem primeiro
+      if (a === 0) return -1;
+      if (b === 0) return 1;
+      
       const subA = subcategories.find((s) => s.id === a);
       const subB = subcategories.find((s) => s.id === b);
       return (subA?.order || 0) - (subB?.order || 0);
@@ -75,15 +82,17 @@ export function ProductList({
             className="scroll-mt-24"
           >
             {/* Título da Subcategoria */}
-            <h3
-              className="text-xl md:text-2xl font-bold mb-4 pb-2 border-b-2"
-              style={{
-                color: mainColor,
-                borderColor: isSelected ? mainColor : '#e5e7eb',
-              }}
-            >
-              {subcategory?.title || 'Sem subcategoria'}
-            </h3>
+            {subcategoryId !== 0 && (
+              <h3
+                className="text-xl md:text-2xl font-bold mb-4 pb-2 border-b-2"
+                style={{
+                  color: mainColor,
+                  borderColor: isSelected ? mainColor : '#e5e7eb',
+                }}
+              >
+                {subcategory?.title || 'Sem subcategoria'}
+              </h3>
+            )}
 
             {/* Produtos da Subcategoria */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

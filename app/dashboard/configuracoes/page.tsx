@@ -15,7 +15,8 @@ export default function ConfiguracoesPage() {
   const restaurantName = useAuthStore((state) => state.restaurantName);
   const getConfig = useRestaurantConfigStore((state) => state.getConfig);
   const updateConfig = useRestaurantConfigStore((state) => state.updateConfig);
-  const initializeConfig = useRestaurantConfigStore((state) => state.initializeConfig);
+  const loadConfig = useRestaurantConfigStore((state) => state.loadConfig);
+  const isLoading = useRestaurantConfigStore((state) => state.isLoading);
 
   const [formData, setFormData] = useState({
     restaurantName: '',
@@ -27,21 +28,36 @@ export default function ConfiguracoesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Carregar dados do store ao montar
+  // Carregar dados da API ao montar
   useEffect(() => {
     if (restaurantId) {
-      // Inicializar config se não existir
-      if (restaurantName) {
-        initializeConfig(restaurantId, restaurantName);
-      }
-      const config = getConfig(restaurantId);
-      setFormData({
-        restaurantName: config.restaurantName || restaurantName || '',
-        mainColor: config.mainColor,
-        logo: config.logo,
+      loadConfig(restaurantId).then(() => {
+        const config = getConfig(restaurantId);
+        if (config) {
+          setFormData({
+            restaurantName: config.restaurantName || restaurantName || '',
+            mainColor: config.mainColor,
+            logo: config.logo,
+          });
+        } else {
+          // Se não retornou config, usa valores padrão
+          setFormData({
+            restaurantName: restaurantName || '',
+            mainColor: '#ff0000',
+            logo: null,
+          });
+        }
+      }).catch((error) => {
+        console.error('Erro ao carregar configurações:', error);
+        // Se der erro, usa valores padrão
+        setFormData({
+          restaurantName: restaurantName || '',
+          mainColor: '#ff0000',
+          logo: null,
+        });
       });
     }
-  }, [restaurantId, restaurantName, getConfig, initializeConfig]);
+  }, [restaurantId, restaurantName, getConfig, loadConfig]);
 
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -57,26 +73,36 @@ export default function ConfiguracoesPage() {
     setIsSubmitting(true);
     setSaved(false);
 
-    // Simula delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     if (!restaurantId) {
       alert('Erro: Restaurante não identificado. Faça login novamente.');
       router.push('/login');
+      setIsSubmitting(false);
       return;
     }
 
-    try {
-      updateConfig(restaurantId, {
+      try {
+      await updateConfig(restaurantId, {
         restaurantName: formData.restaurantName.trim(),
         mainColor: formData.mainColor,
         logo: formData.logo,
       });
 
+      // Recarrega as configurações da API para garantir sincronização
+      await loadConfig(restaurantId);
+      const updatedConfig = getConfig(restaurantId);
+      if (updatedConfig) {
+        setFormData({
+          restaurantName: updatedConfig.restaurantName || '',
+          mainColor: updatedConfig.mainColor,
+          logo: updatedConfig.logo,
+        });
+      }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
+      alert('Erro ao salvar configurações. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }

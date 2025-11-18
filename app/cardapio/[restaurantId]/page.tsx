@@ -2,69 +2,150 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { useRestaurantConfigStore } from '@/store/restaurantConfigStore';
-import { useCategoriesStore } from '@/store/categoriesStore';
-import { useSubcategoriesStore } from '@/store/subcategoriesStore';
-import { useProductsStore } from '@/store/productsStore';
-import { getUserByUrl } from '@/lib/mockUsers';
-import { Category, Subcategory, Product } from '@/lib/mockData';
+import { restaurantService } from '@/lib/api/restaurantService';
+import type { PublicMenuDto, CategoryWithProductsDto, SubcategoryWithProductsDto, ProductDto } from '@/lib/api/types';
 import { CategoryTabs } from '@/components/cardapio/CategoryTabs';
 import { SubcategoryList } from '@/components/cardapio/SubcategoryList';
 import { ProductList } from '@/components/cardapio/ProductList';
 
+// Tipos locais para compatibilidade com componentes
+type Category = {
+  id: number;
+  restaurantId: number;
+  title: string;
+  active: boolean;
+  order: number;
+};
+
+type Subcategory = {
+  id: number;
+  restaurantId: number;
+  categoryId: number;
+  title: string;
+  active: boolean;
+  order: number;
+};
+
+type Product = {
+  id: number;
+  restaurantId: number;
+  categoryId: number;
+  subcategoryId: number;
+  title: string;
+  description: string;
+  priceType: 'unique' | 'variable';
+  price?: number;
+  variations?: { label: string; price: number }[];
+  images?: string[];
+  active: boolean;
+  order: number;
+};
+
 export default function CardapioPublicoPage() {
   const params = useParams();
-  const restaurantUrl = params.restaurantId as string;
+  const slug = params.restaurantId as string;
 
-  const [restaurantUser, setRestaurantUser] = useState<ReturnType<typeof getUserByUrl> | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [config, setConfig] = useState<{
-    restaurantName: string;
-    mainColor: string;
-    logo: string | null;
-  }>({
-    restaurantName: "Exemplo Restaurante",
-    mainColor: "#ff0000",
-    logo: null,
-  });
-
+  const [menu, setMenu] = useState<PublicMenuDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<number | null>(null);
 
-  const getCategoriesByRestaurant = useCategoriesStore((state) => state.getCategoriesByRestaurant);
-  const getSubcategoriesByRestaurant = useSubcategoriesStore((state) => state.getSubcategoriesByRestaurant);
-  const getProductsByRestaurant = useProductsStore((state) => state.getProductsByRestaurant);
-  const getConfig = useRestaurantConfigStore((state) => state.getConfig);
-  const initializeConfig = useRestaurantConfigStore((state) => state.initializeConfig);
+  // Converter dados da API para formato local
+  const categories: Category[] = menu?.categories?.map(cat => ({
+    id: cat.category.id,
+    restaurantId: cat.category.restaurantId,
+    title: cat.category.title || '',
+    active: cat.category.active,
+    order: cat.category.order,
+  })) || [];
 
-  // Buscar restaurante pela URL
+  const subcategories: Subcategory[] = menu?.categories?.flatMap(cat => 
+    cat.subcategories?.map(sub => ({
+      id: sub.subcategory.id,
+      restaurantId: sub.subcategory.restaurantId,
+      categoryId: sub.subcategory.categoryId,
+      title: sub.subcategory.title || '',
+      active: sub.subcategory.active,
+      order: sub.subcategory.order,
+    })) || []
+  ) || [];
+
+  const products: Product[] = menu?.categories?.flatMap(cat => {
+    // Produtos das subcategorias
+    const subcategoryProducts = cat.subcategories?.flatMap(sub => 
+      (sub.products || []).map(prod => ({
+        id: prod.id,
+        restaurantId: prod.restaurantId,
+        categoryId: prod.categoryId,
+        subcategoryId: prod.subcategoryId || sub.subcategory.id,
+        title: prod.title || '',
+        description: prod.description || '',
+        priceType: (prod.priceType as 'unique' | 'variable') || 'unique',
+        price: prod.price || undefined,
+        variations: prod.variations?.map(v => ({ label: v.label || '', price: v.price })),
+        images: prod.images || [],
+        active: prod.active,
+        order: prod.order,
+      })) || []
+    ) || [];
+    
+    // Produtos diretamente na categoria (sem subcategoria)
+    const categoryProducts = (cat.products || []).map(prod => ({
+      id: prod.id,
+      restaurantId: prod.restaurantId,
+      categoryId: prod.categoryId,
+      subcategoryId: prod.subcategoryId || 0,
+      title: prod.title || '',
+      description: prod.description || '',
+      priceType: (prod.priceType as 'unique' | 'variable') || 'unique',
+      price: prod.price || undefined,
+      variations: prod.variations?.map(v => ({ label: v.label || '', price: v.price })),
+      images: prod.images || [],
+      active: prod.active,
+      order: prod.order,
+    }));
+    
+    // Combinar produtos de subcategorias e da categoria
+    return [...subcategoryProducts, ...categoryProducts];
+  }) || [];
+
+  const config = menu?.restaurant ? {
+    restaurantName: menu.restaurant.restaurantName || 'Cardápio Digital',
+    mainColor: menu.restaurant.mainColor || '#ff0000',
+    logo: menu.restaurant.logo || null,
+  } : {
+    restaurantName: 'Cardápio Digital',
+    mainColor: '#ff0000',
+    logo: null,
+  };
+
+  // Carregar menu público
   useEffect(() => {
-    const user = getUserByUrl(restaurantUrl);
-    if (user) {
-      setRestaurantUser(user);
-      // Inicializar config se não existir
-      initializeConfig(user.id, user.restaurantName);
-      // Carregar configurações do restaurante
-      const restaurantConfig = getConfig(user.id);
-      setConfig(restaurantConfig);
-      // Carregar dados do restaurante diretamente dos stores principais
-      const loadedCategories = getCategoriesByRestaurant(user.id);
-      const loadedSubcategories = getSubcategoriesByRestaurant(user.id);
-      const loadedProducts = getProductsByRestaurant(user.id);
-      
-      setCategories(loadedCategories);
-      setSubcategories(loadedSubcategories);
-      setProducts(loadedProducts);
-
-      // Selecionar primeira categoria ativa por padrão
-      const firstActiveCategory = loadedCategories.find((cat) => cat.active);
-      if (firstActiveCategory) {
-        setSelectedCategoryId(firstActiveCategory.id);
+    const loadMenu = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const menuData = await restaurantService.getPublicMenu(slug);
+        setMenu(menuData);
+        
+        // Selecionar primeira categoria ativa por padrão
+        const firstActiveCategory = menuData.categories?.find(cat => cat.category.active);
+        if (firstActiveCategory) {
+          setSelectedCategoryId(firstActiveCategory.category.id);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar menu:', error);
+        setError('Restaurante não encontrado');
+      } finally {
+        setIsLoading(false);
       }
+    };
+
+    if (slug) {
+      loadMenu();
     }
-  }, [restaurantUrl, getCategoriesByRestaurant, getSubcategoriesByRestaurant, getProductsByRestaurant, getConfig, initializeConfig]);
+  }, [slug]);
 
 
   // Resetar subcategoria selecionada quando categoria mudar
@@ -72,8 +153,18 @@ export default function CardapioPublicoPage() {
     setSelectedSubcategoryId(null);
   }, [selectedCategoryId]);
 
-  // Se restaurante não encontrado
-  if (!restaurantUser) {
+  // Loading ou erro
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-gray-600">Carregando cardápio...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !menu) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -81,7 +172,7 @@ export default function CardapioPublicoPage() {
             Restaurante não encontrado
           </h1>
           <p className="text-gray-600">
-            A URL "{restaurantUrl}" não corresponde a nenhum restaurante cadastrado.
+            O cardápio solicitado não está disponível.
           </p>
         </div>
       </div>
@@ -104,6 +195,7 @@ export default function CardapioPublicoPage() {
     : [];
 
   // Filtrar produtos da categoria selecionada
+  // Sempre mostrar todos os produtos da categoria (a subcategoria selecionada é apenas para scroll)
   const filteredProducts = selectedCategoryId
     ? products.filter((prod) => prod.categoryId === selectedCategoryId)
     : [];
