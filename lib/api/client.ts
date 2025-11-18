@@ -1,7 +1,25 @@
 // Cliente HTTP para comunicação com a API
 import type { ApiResponse } from './types';
 
-const BASE_URL = 'http://72.60.7.234';
+// Usa variável de ambiente ou fallback
+// Em produção (Vercel HTTPS), usa API route do Next.js como proxy para evitar Mixed Content
+// Em desenvolvimento, usa URL direta
+const getBaseUrl = (): string => {
+  // Se estiver no servidor (SSR), usa URL direta
+  if (typeof window === 'undefined') {
+    return process.env.NEXT_PUBLIC_API_URL || 'http://72.60.7.234';
+  }
+  
+  // Se estiver no cliente e em produção (HTTPS), usa proxy via API route
+  if (window.location.protocol === 'https:') {
+    return '/api/proxy';
+  }
+  
+  // Caso contrário, usa URL direta (desenvolvimento local)
+  return process.env.NEXT_PUBLIC_API_URL || 'http://72.60.7.234';
+};
+
+const BASE_URL = getBaseUrl();
 
 // Função para obter o token do localStorage (Zustand persist)
 const getToken = (): string | null => {
@@ -36,7 +54,12 @@ async function apiRequest<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const url = `${BASE_URL}${endpoint}`;
+  // Se estiver usando proxy, remover /api do endpoint (o proxy já adiciona)
+  const finalEndpoint = BASE_URL.startsWith('/api/proxy') && endpoint.startsWith('/api/')
+    ? endpoint.replace('/api', '')
+    : endpoint;
+  
+  const url = `${BASE_URL}${finalEndpoint}`;
   
   try {
     const response = await fetch(url, {
