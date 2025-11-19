@@ -103,7 +103,7 @@ export function ProductList({
               {subcategoryProducts.map((product) => (
                 <div
                   key={product.id}
-                  onClick={() => router.push(`/cardapio/${restaurantId}/produto/${product.id}`)}
+                  onClick={() => router.push(`/menu/${restaurantId}/produto/${product.id}`)}
                   className="rounded-lg overflow-hidden transition-all bg-white border border-gray-200 cursor-pointer hover:shadow-lg hover:border-gray-300"
                 >
                   {/* Conteúdo superior: Título/Descrição e Imagem */}

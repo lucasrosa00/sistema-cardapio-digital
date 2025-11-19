@@ -15,22 +15,33 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Função para comprimir e redimensionar imagem
-  const compressImage = (file: File): Promise<string> => {
+  // Função para calcular o tamanho do base64 em bytes
+  const getBase64Size = (base64String: string): number => {
+    // Remove o prefixo "data:image/jpeg;base64," e calcula o tamanho
+    const base64Data = base64String.split(',')[1] || base64String;
+    return (base64Data.length * 3) / 4;
+  };
+
+  // Função para comprimir e redimensionar imagem até ficar abaixo do tamanho máximo
+  const compressImageToSize = (
+    file: File,
+    maxSizeBytes: number,
+    initialQuality: number = 0.8
+  ): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          // Tamanho máximo para redimensionar (mantendo aspect ratio)
-          const MAX_WIDTH = 800;
-          const MAX_HEIGHT = 800;
-          const QUALITY = 0.8; // Qualidade de compressão (0.8 = 80%)
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 1200;
+          const MIN_QUALITY = 0.3;
+          const QUALITY_STEP = 0.1;
 
           let width = img.width;
           let height = img.height;
 
-          // Calcula as novas dimensões mantendo o aspect ratio
+          // Redimensiona se necessário
           if (width > height) {
             if (width > MAX_WIDTH) {
               height = (height * MAX_WIDTH) / width;
@@ -43,23 +54,56 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             }
           }
 
-          // Cria canvas para redimensionar e comprimir
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
+          // Tenta diferentes níveis de qualidade até ficar abaixo do limite
+          const tryCompress = (quality: number, currentWidth: number, currentHeight: number): string | null => {
+            const canvas = document.createElement('canvas');
+            canvas.width = currentWidth;
+            canvas.height = currentHeight;
+            const ctx = canvas.getContext('2d');
 
-          if (!ctx) {
-            reject(new Error('Não foi possível criar contexto do canvas'));
-            return;
+            if (!ctx) {
+              return null;
+            }
+
+            ctx.drawImage(img, 0, 0, currentWidth, currentHeight);
+            const base64String = canvas.toDataURL('image/jpeg', quality);
+            const size = getBase64Size(base64String);
+
+            if (size <= maxSizeBytes) {
+              return base64String;
+            }
+
+            return null;
+          };
+
+          // Tenta com qualidade inicial
+          let quality = initialQuality;
+          let result = tryCompress(quality, width, height);
+
+          // Se não funcionou, reduz qualidade progressivamente
+          while (!result && quality >= MIN_QUALITY) {
+            quality -= QUALITY_STEP;
+            result = tryCompress(quality, width, height);
           }
 
-          // Desenha a imagem redimensionada no canvas
-          ctx.drawImage(img, 0, 0, width, height);
+          // Se ainda não funcionou, reduz dimensões também
+          if (!result) {
+            let currentWidth = width;
+            let currentHeight = height;
+            quality = MIN_QUALITY;
 
-          // Converte para base64 com compressão
-          const base64String = canvas.toDataURL('image/jpeg', QUALITY);
-          resolve(base64String);
+            while (!result && currentWidth > 400 && currentHeight > 400) {
+              currentWidth = Math.floor(currentWidth * 0.9);
+              currentHeight = Math.floor(currentHeight * 0.9);
+              result = tryCompress(quality, currentWidth, currentHeight);
+            }
+          }
+
+          if (result) {
+            resolve(result);
+          } else {
+            reject(new Error('Não foi possível comprimir a imagem abaixo do limite de 1.5MB'));
+          }
         };
         img.onerror = reject;
         img.src = e.target?.result as string;
@@ -69,21 +113,56 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     });
   };
 
+  // Função para comprimir e redimensionar imagem (versão padrão)
+  const compressImage = (file: File): Promise<string> => {
+    return compressImageToSize(file, Infinity, 0.8);
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
+    const MAX_FILE_SIZE = 1.5 * 1024 * 1024; // 1.5MB em bytes
+
     const remainingSlots = maxImages - images.length;
-    const filesToProcess = Array.from(files)
-      .filter((file) => file.type.startsWith('image/'))
-      .slice(0, remainingSlots);
+    const allFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
+    
+    // Verificar tamanho dos arquivos antes de processar
+    const oversizedFiles = allFiles.filter((file) => file.size > MAX_FILE_SIZE);
+    
+    if (oversizedFiles.length > 0) {
+      const fileCount = oversizedFiles.length;
+      const fileText = fileCount === 1 ? 'imagem' : 'imagens';
+      const confirmMessage = `${fileCount} ${fileText} excede(m) o limite de 1.5MB. Deseja comprimir ${fileText === 'imagem' ? 'a imagem' : 'as imagens'} automaticamente para que fique(m) abaixo do limite?`;
+      
+      const shouldCompress = window.confirm(confirmMessage);
+      
+      if (!shouldCompress) {
+        // Reset input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+    }
+
+    const filesToProcess = allFiles.slice(0, remainingSlots);
 
     if (filesToProcess.length === 0) return;
 
     try {
       // Comprime todas as imagens
+      // Se o arquivo original for maior que 1.5MB, usa compressão agressiva
       const compressedImages = await Promise.all(
-        filesToProcess.map((file) => compressImage(file))
+        filesToProcess.map(async (file) => {
+          if (file.size > MAX_FILE_SIZE) {
+            // Usa compressão agressiva para arquivos grandes
+            return await compressImageToSize(file, MAX_FILE_SIZE, 0.7);
+          } else {
+            // Usa compressão padrão para arquivos pequenos
+            return await compressImage(file);
+          }
+        })
       );
 
       // Adiciona as imagens comprimidas

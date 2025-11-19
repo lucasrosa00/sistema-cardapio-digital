@@ -143,7 +143,7 @@ export default function ProdutoDetalhesPage() {
             O produto que você está procurando não está disponível.
           </p>
           <button
-            onClick={() => router.push(`/cardapio/${slug}`)}
+            onClick={() => router.push(`/menu/${slug}`)}
             className="px-6 py-2 rounded-lg font-medium transition-colors"
             style={{ 
               backgroundColor: config.mainColor,
@@ -161,7 +161,7 @@ export default function ProdutoDetalhesPage() {
     <div className="min-h-screen bg-gray-50 text-gray-900">
       {/* Cabeçalho */}
       <header
-        className="sticky top-0 z-10 shadow-lg bg-white"
+        className="sticky top-0 z-30 shadow-lg bg-white"
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center gap-4">
@@ -184,7 +184,7 @@ export default function ProdutoDetalhesPage() {
               </p>
             </div>
             <button
-              onClick={() => router.push(`/cardapio/${slug}`)}
+              onClick={() => router.push(`/menu/${slug}`)}
               className="px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-80"
               style={{ 
                 backgroundColor: config.mainColor,
