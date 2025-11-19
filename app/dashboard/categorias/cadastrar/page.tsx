@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useMemo } from 'react';
+import { useState, FormEvent, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCategoriesStore } from '@/store/categoriesStore';
 import { useAuthStore } from '@/store/authStore';
@@ -17,26 +17,48 @@ export default function CadastrarCategoriaPage() {
   
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   
+  // Carregar categorias ao montar o componente
+  useEffect(() => {
+    if (restaurantId) {
+      loadCategories().catch((error) => {
+        console.error('Erro ao carregar categorias:', error);
+      });
+    }
+  }, [restaurantId, loadCategories]);
+  
   // Calcula a maior ordem atual para as opções do select
   const maxOrder = categories.length === 0 
     ? 0 
     : Math.max(...categories.map(c => c.order || 0));
 
-  // Inicializa o formData com a ordem inicial calculada uma única vez
-  const [formData, setFormData] = useState(() => {
-    // Calcula a ordem inicial no momento da inicialização
-    const initialCategories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
-    const calculatedMaxOrder = initialCategories.length === 0 
-      ? 0 
-      : Math.max(...initialCategories.map(c => c.order || 0));
-    return {
-      title: '',
-      active: true,
-      order: String(calculatedMaxOrder + 1),
-    };
+  // Inicializa o formData
+  const [formData, setFormData] = useState({
+    title: '',
+    active: true,
+    order: '1',
   });
   const [errors, setErrors] = useState<{ title?: string; order?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Atualiza a ordem inicial quando as categorias forem carregadas
+  useEffect(() => {
+    if (restaurantId) {
+      const calculatedMaxOrder = categories.length === 0 
+        ? 0 
+        : Math.max(...categories.map(c => c.order || 0));
+      setFormData(prev => {
+        const newOrder = String(calculatedMaxOrder + 1);
+        // Só atualiza se o valor mudou para evitar loops
+        if (prev.order !== newOrder) {
+          return {
+            ...prev,
+            order: newOrder,
+          };
+        }
+        return prev;
+      });
+    }
+  }, [categories.length, restaurantId]); // Atualiza quando categorias mudarem
 
   // Gera as opções do select: de 1 até maxOrder + 1
   const orderOptions = useMemo(() => {

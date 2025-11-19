@@ -1,8 +1,20 @@
-// API Route para fazer proxy das requisições HTTP para evitar Mixed Content
-// Esta rota permite que requisições HTTPS façam proxy para a API HTTP
+// API Route para fazer proxy das requisições HTTP para evitar Mixed Content e CORS
+// Esta rota permite que requisições façam proxy para a API, evitando problemas de CORS
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://72.60.7.234:8000';
+
+// Headers CORS para permitir requisições do frontend
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// Handler para requisições OPTIONS (preflight)
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
 
 export async function GET(
   request: NextRequest,
@@ -78,14 +90,34 @@ async function handleRequest(
     // Fazer requisição para a API
     const response = await fetch(fullUrl, fetchOptions);
 
-    // Obter resposta
-    const data = await response.json();
+    // Verificar se a resposta é JSON
+    const contentType = response.headers.get('content-type');
+    let data: unknown;
+    
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        data = await response.json();
+      } catch {
+        // Se falhar ao fazer parse, usar texto
+        const text = await response.text();
+        data = text ? { message: text } : { message: 'Resposta vazia' };
+      }
+    } else {
+      // Se não for JSON, tentar ler como texto
+      const text = await response.text();
+      try {
+        data = text ? JSON.parse(text) : { message: 'Resposta vazia' };
+      } catch {
+        data = { message: text || 'Erro na requisição' };
+      }
+    }
 
-    // Retornar resposta com status e headers corretos
+    // Retornar resposta com status e headers corretos (incluindo CORS)
     return NextResponse.json(data, {
       status: response.status,
       headers: {
         'Content-Type': 'application/json',
+        ...corsHeaders,
       },
     });
   } catch (error) {
@@ -97,7 +129,10 @@ async function handleRequest(
         data: null,
         errors: null,
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders,
+      }
     );
   }
 }

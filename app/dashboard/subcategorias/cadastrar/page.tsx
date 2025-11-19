@@ -14,11 +14,23 @@ export default function CadastrarSubcategoriaPage() {
   const router = useRouter();
   const restaurantId = useAuthStore((state) => state.restaurantId);
   const addSubcategory = useSubcategoriesStore((state) => state.addSubcategory);
-  const { getCategoriesByRestaurant } = useCategoriesStore();
+  const { getCategoriesByRestaurant, loadCategories } = useCategoriesStore();
   const { getSubcategoriesByRestaurant, loadSubcategories } = useSubcategoriesStore();
   
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const allSubcategories = restaurantId ? getSubcategoriesByRestaurant(restaurantId) : [];
+
+  // Carregar categorias e subcategorias ao montar o componente
+  useEffect(() => {
+    if (restaurantId) {
+      loadCategories().catch((error) => {
+        console.error('Erro ao carregar categorias:', error);
+      });
+      loadSubcategories().catch((error) => {
+        console.error('Erro ao carregar subcategorias:', error);
+      });
+    }
+  }, [restaurantId, loadCategories, loadSubcategories]);
 
   // Inicializa o formData
   const [formData, setFormData] = useState(() => {
@@ -57,14 +69,23 @@ export default function CadastrarSubcategoriaPage() {
 
   // Atualiza a ordem inicial quando as subcategorias mudarem (ordenação global)
   useEffect(() => {
-    const calculatedMaxOrder = allSubcategories.length === 0 
-      ? 0 
-      : Math.max(...allSubcategories.map(sub => sub.order || 0));
-    setFormData(prev => ({
-      ...prev,
-      order: String(calculatedMaxOrder + 1),
-    }));
-  }, [allSubcategories.length]); // Usa apenas o length para evitar loop
+    if (restaurantId) {
+      const calculatedMaxOrder = allSubcategories.length === 0 
+        ? 0 
+        : Math.max(...allSubcategories.map(sub => sub.order || 0));
+      setFormData(prev => {
+        const newOrder = String(calculatedMaxOrder + 1);
+        // Só atualiza se o valor mudou para evitar loops
+        if (prev.order !== newOrder) {
+          return {
+            ...prev,
+            order: newOrder,
+          };
+        }
+        return prev;
+      });
+    }
+  }, [allSubcategories.length, restaurantId]); // Atualiza quando subcategorias mudarem
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

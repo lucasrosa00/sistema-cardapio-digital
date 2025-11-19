@@ -15,11 +15,20 @@ export default function EditarCategoriaPage() {
   const id = Number(params.id);
   
   const restaurantId = useAuthStore((state) => state.restaurantId);
-  const { getCategoriesByRestaurant, loadCategories } = useCategoriesStore();
+  const { getCategoriesByRestaurant, loadCategories, isLoading } = useCategoriesStore();
   const updateCategory = useCategoriesStore((state) => state.updateCategory);
   
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const category = categories.find((cat) => cat.id === id);
+
+  // Carregar categorias ao montar o componente
+  useEffect(() => {
+    if (restaurantId) {
+      loadCategories().catch((error) => {
+        console.error('Erro ao carregar categorias:', error);
+      });
+    }
+  }, [restaurantId, loadCategories]);
 
   // Calcula a maior ordem atual (sem incluir +1, pois é edição)
   const maxOrder = useMemo(() => {
@@ -116,6 +125,20 @@ export default function EditarCategoriaPage() {
     }
   };
 
+  // Mostrar loading enquanto carrega
+  if (isLoading) {
+    return (
+      <div className="bg-gray-50 min-h-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-gray-600 text-center">Carregando...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Só mostrar "não encontrada" se não estiver carregando e realmente não existir
   if (!category) {
     return (
       <div className="bg-gray-50 min-h-full">

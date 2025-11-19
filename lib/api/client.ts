@@ -2,21 +2,16 @@
 import type { ApiResponse } from './types';
 
 // Usa variável de ambiente ou fallback
-// Em produção (Vercel HTTPS), usa API route do Next.js como proxy para evitar Mixed Content
-// Em desenvolvimento, usa URL direta
+// Usa API route do Next.js como proxy para evitar problemas de CORS e Mixed Content
 const getBaseUrl = (): string => {
-  // Se estiver no servidor (SSR), usa URL direta
+  // Se estiver no servidor (SSR), usa URL direta (não há CORS no servidor)
   if (typeof window === 'undefined') {
     return process.env.NEXT_PUBLIC_API_URL || 'http://72.60.7.234:8000';
   }
   
-  // Se estiver no cliente e em produção (HTTPS), usa proxy via API route
-  if (window.location.protocol === 'https:') {
-    return '/api/proxy';
-  }
-  
-  // Caso contrário, usa URL direta (desenvolvimento local)
-  return process.env.NEXT_PUBLIC_API_URL || 'http://72.60.7.234:8000';
+  // Se estiver no cliente, sempre usa proxy via API route
+  // Isso evita problemas de CORS quando frontend e backend estão em portas/domínios diferentes
+  return '/api/proxy';
 };
 
 const BASE_URL = getBaseUrl();

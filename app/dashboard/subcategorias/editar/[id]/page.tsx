@@ -16,13 +16,26 @@ export default function EditarSubcategoriaPage() {
   const id = Number(params.id);
   
   const restaurantId = useAuthStore((state) => state.restaurantId);
-  const { getSubcategoriesByRestaurant, loadSubcategories } = useSubcategoriesStore();
+  const { getSubcategoriesByRestaurant, loadSubcategories, isLoading: isLoadingSubcategories } = useSubcategoriesStore();
   const updateSubcategory = useSubcategoriesStore((state) => state.updateSubcategory);
-  const { getCategoriesByRestaurant } = useCategoriesStore();
+  const { getCategoriesByRestaurant, loadCategories, isLoading: isLoadingCategories } = useCategoriesStore();
   
   const subcategories = restaurantId ? getSubcategoriesByRestaurant(restaurantId) : [];
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const subcategory = subcategories.find((sub) => sub.id === id);
+  const isLoading = isLoadingCategories || isLoadingSubcategories;
+
+  // Carregar categorias e subcategorias ao montar o componente
+  useEffect(() => {
+    if (restaurantId) {
+      loadCategories().catch((error) => {
+        console.error('Erro ao carregar categorias:', error);
+      });
+      loadSubcategories().catch((error) => {
+        console.error('Erro ao carregar subcategorias:', error);
+      });
+    }
+  }, [restaurantId, loadCategories, loadSubcategories]);
 
   // Inicializa o formData
   const [formData, setFormData] = useState({
@@ -141,6 +154,20 @@ export default function EditarSubcategoriaPage() {
     }));
   };
 
+  // Mostrar loading enquanto carrega
+  if (isLoading) {
+    return (
+      <div className="bg-gray-50 min-h-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-gray-600 text-center">Carregando...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Só mostrar "não encontrada" se não estiver carregando e realmente não existir
   if (!subcategory) {
     return (
       <div className="bg-gray-50 min-h-full">
