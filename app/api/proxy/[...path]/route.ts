@@ -2,7 +2,7 @@
 // Esta rota permite que requisições HTTPS façam proxy para a API HTTP
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://72.60.7.234';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://72.60.7.234:8000';
 
 export async function GET(
   request: NextRequest,

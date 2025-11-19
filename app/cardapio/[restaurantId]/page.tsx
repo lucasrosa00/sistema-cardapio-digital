@@ -50,6 +50,7 @@ export default function CardapioPublicoPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<number | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Converter dados da API para formato local
   const categories: Category[] = menu?.categories?.map(cat => ({
@@ -152,6 +153,25 @@ export default function CardapioPublicoPage() {
   useEffect(() => {
     setSelectedSubcategoryId(null);
   }, [selectedCategoryId]);
+
+  // Detectar scroll para mostrar/ocultar botão de voltar ao topo
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      setShowScrollTop(scrollTop > 300);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Função para voltar ao topo
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
 
   // Loading ou erro
   if (isLoading) {
@@ -306,11 +326,36 @@ export default function CardapioPublicoPage() {
       </main>
 
       {/* Rodapé */}
-      <footer className="mt-12 py-6 text-center text-gray-600">
+      <footer className="py-6 text-center text-gray-600">
         <p className="text-sm">
           © {new Date().getFullYear()} {config.restaurantName || 'Cardápio Digital'}
         </p>
       </footer>
+
+      {/* Botão flutuante para voltar ao topo */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 flex items-center justify-center"
+          style={{ backgroundColor: config.mainColor }}
+          aria-label="Voltar ao topo"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 10l7-7m0 0l7 7m-7-7v18"
+            />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

@@ -18,13 +18,28 @@ export default function CadastrarProdutoPage() {
   const router = useRouter();
   const restaurantId = useAuthStore((state) => state.restaurantId);
   const addProduct = useProductsStore((state) => state.addProduct);
-  const { getCategoriesByRestaurant } = useCategoriesStore();
-  const { getSubcategoriesByRestaurant } = useSubcategoriesStore();
+  const { getCategoriesByRestaurant, loadCategories } = useCategoriesStore();
+  const { getSubcategoriesByRestaurant, loadSubcategories } = useSubcategoriesStore();
   const { getProductsByRestaurant, loadProducts } = useProductsStore();
 
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const subcategories = restaurantId ? getSubcategoriesByRestaurant(restaurantId) : [];
   const allProducts = restaurantId ? getProductsByRestaurant(restaurantId) : [];
+
+  // Carregar categorias, subcategorias e produtos ao montar o componente
+  useEffect(() => {
+    if (restaurantId) {
+      loadProducts().catch((error) => {
+        console.error('Erro ao carregar produtos:', error);
+      });
+      loadCategories().catch((error) => {
+        console.error('Erro ao carregar categorias:', error);
+      });
+      loadSubcategories().catch((error) => {
+        console.error('Erro ao carregar subcategorias:', error);
+      });
+    }
+  }, [restaurantId, loadProducts, loadCategories, loadSubcategories]);
 
   // Calcula a maior ordem atual (global, todos os produtos do restaurante)
   const maxOrder = allProducts.length === 0

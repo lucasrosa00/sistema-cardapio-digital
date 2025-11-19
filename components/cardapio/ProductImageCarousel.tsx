@@ -1,21 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ProductImageCarouselProps {
   images: string[];
   productTitle: string;
+  disableAutoPlay?: boolean;
+  alwaysShowControls?: boolean;
 }
 
 export function ProductImageCarousel({
   images,
   productTitle,
+  disableAutoPlay = false,
+  alwaysShowControls = false,
 }: ProductImageCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(true);
 
   if (images.length === 0) {
     return null;
   }
+
+  // Detectar se é mobile ou desktop
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint do Tailwind
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Auto-play: troca de imagem a cada 3 segundos apenas no mobile (se não estiver desabilitado)
+  useEffect(() => {
+    if (images.length <= 1 || !isMobile || disableAutoPlay) return;
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [images.length, isMobile, disableAutoPlay]);
 
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -29,9 +56,10 @@ export function ProductImageCarousel({
     setCurrentIndex(index);
   };
 
+
   return (
-    <div className="relative w-full mb-4">
-      <div className="relative overflow-hidden rounded-lg" style={{ aspectRatio: '16/16' }}>
+    <div className="relative w-full">
+      <div className="relative overflow-hidden rounded-lg w-full" style={{ aspectRatio: '1/1' }}>
         <img
           src={images[currentIndex]}
           alt={`${productTitle} - Imagem ${currentIndex + 1}`}
@@ -43,7 +71,7 @@ export function ProductImageCarousel({
             {/* Botões de navegação */}
             <button
               onClick={goToPrevious}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+              className={`${alwaysShowControls ? 'block' : 'hidden md:block'} absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors z-10`}
               aria-label="Imagem anterior"
             >
               <svg
@@ -62,7 +90,7 @@ export function ProductImageCarousel({
             </button>
             <button
               onClick={goToNext}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+              className={`${alwaysShowControls ? 'block' : 'hidden md:block'} absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors z-10`}
               aria-label="Próxima imagem"
             >
               <svg
@@ -81,7 +109,7 @@ export function ProductImageCarousel({
             </button>
 
             {/* Indicadores de slide */}
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
+            <div className={`${alwaysShowControls ? 'flex' : 'hidden md:flex'} absolute bottom-2 left-1/2 -translate-x-1/2 gap-2`}>
               {images.map((_, index) => (
                 <button
                   key={index}

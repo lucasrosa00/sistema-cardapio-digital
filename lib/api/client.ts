@@ -7,7 +7,7 @@ import type { ApiResponse } from './types';
 const getBaseUrl = (): string => {
   // Se estiver no servidor (SSR), usa URL direta
   if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://72.60.7.234';
+    return process.env.NEXT_PUBLIC_API_URL || 'http://72.60.7.234:8000';
   }
   
   // Se estiver no cliente e em produção (HTTPS), usa proxy via API route
@@ -16,7 +16,7 @@ const getBaseUrl = (): string => {
   }
   
   // Caso contrário, usa URL direta (desenvolvimento local)
-  return process.env.NEXT_PUBLIC_API_URL || 'http://72.60.7.234';
+  return process.env.NEXT_PUBLIC_API_URL || 'http://72.60.7.234:8000';
 };
 
 const BASE_URL = getBaseUrl();
@@ -67,13 +67,42 @@ async function apiRequest<T>(
       headers,
     });
 
-    // Verifica se a resposta é JSON
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('Resposta não é JSON');
+    // Se o token expirou (401), limpar autenticação e redirecionar para login
+    if (response.status === 401) {
+      // Limpar token do localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem('auth-storage');
+        } catch (error) {
+          console.error('Erro ao limpar autenticação:', error);
+        }
+        // Redirecionar para login apenas se não estiver já na página de login
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+      }
+      throw new Error('Sessão expirada. Por favor, faça login novamente.');
     }
 
-    const data: ApiResponse<T> = await response.json();
+    // Verifica se a resposta é JSON
+    const contentType = response.headers.get('content-type');
+    let data: ApiResponse<T>;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // Se não for JSON, tenta fazer parse mesmo assim ou cria resposta padrão
+      try {
+        const text = await response.text();
+        if (text) {
+          data = JSON.parse(text);
+        } else {
+          throw new Error('Resposta vazia');
+        }
+      } catch {
+        throw new Error(`Erro na requisição: ${response.status} ${response.statusText}`);
+      }
+    }
 
     // Se a API retornou erro, lança exceção
     if (!response.ok || !data.success) {
@@ -83,6 +112,11 @@ async function apiRequest<T>(
 
     return data;
   } catch (error) {
+    // Se já é um erro de sessão expirada, apenas relança
+    if (error instanceof Error && error.message.includes('Sessão expirada')) {
+      throw error;
+    }
+    
     if (error instanceof Error) {
       throw error;
     }

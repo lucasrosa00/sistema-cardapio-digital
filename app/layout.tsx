@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cardápio Digital",
-  description: "Sistema de gerenciamento de cardápio digital para restaurantes",
+  title: "Pink Tech - Sistemas tecnológicos para seu negócio",
+  description: "Sistemas tecnológicos para seu negócio",
 };
 
 export default function RootLayout({

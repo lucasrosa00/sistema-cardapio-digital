@@ -1,5 +1,5 @@
 // Tipos baseados no Swagger da API
-// Base URL: http://72.60.7.234
+// Base URL: http://72.60.7.234:8000
 
 // Resposta padrão da API
 export interface ApiResponse<T> {

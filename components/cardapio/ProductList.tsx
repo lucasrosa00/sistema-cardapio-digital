@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { Product, Subcategory } from '@/lib/mockData';
 import { ProductImageCarousel } from './ProductImageCarousel';
 
@@ -19,6 +20,9 @@ export function ProductList({
   mainColor,
   formatPrice,
 }: ProductListProps) {
+  const router = useRouter();
+  const params = useParams();
+  const restaurantId = params.restaurantId as string;
   const subcategoryRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   // Scroll para subcategoria selecionada
@@ -95,39 +99,47 @@ export function ProductList({
             )}
 
             {/* Produtos da Subcategoria */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-6">
               {subcategoryProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="rounded-lg overflow-hidden transition-all bg-white border border-gray-200"
+                  onClick={() => router.push(`/cardapio/${restaurantId}/produto/${product.id}`)}
+                  className="rounded-lg overflow-hidden transition-all bg-white border border-gray-200 cursor-pointer hover:shadow-lg hover:border-gray-300"
                 >
-                  {/* Imagens do Produto */}
-                  {product.images && product.images.length > 0 && (
-                    <ProductImageCarousel
-                      images={product.images}
-                      productTitle={product.title}
-                    />
-                  )}
+                  {/* Conteúdo superior: Título/Descrição e Imagem */}
+                  <div className="flex flex-row">
+                    {/* Informações do Produto */}
+                    <div className="p-4 flex-1 flex flex-col">
+                      <h4 className="text-lg font-semibold mb-2">
+                        {product.title}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        {product.description}
+                      </p>
+                    </div>
 
-                  {/* Informações do Produto */}
-                  <div className="p-4">
-                    <h4 className="text-lg font-semibold mb-2">
-                      {product.title}
-                    </h4>
-                    <p className="text-sm mb-3 text-gray-600">
-                      {product.description}
-                    </p>
+                    {/* Imagens do Produto */}
+                    {product.images && product.images.length > 0 && (
+                      <div className="py-4 pr-4 w-32 sm:w-40 md:w-64 flex-shrink-0">
+                        <ProductImageCarousel
+                          images={product.images}
+                          productTitle={product.title}
+                        />
+                      </div>
+                    )}
+                  </div>
 
-                    {/* Preço ou Variações */}
+                  {/* Preço ou Variações - Ocupa 100% da largura */}
+                  <div className="px-4 pb-4 w-full border-t border-gray-100">
                     {product.priceType === 'unique' ? (
                       <div
-                        className="text-xl font-bold"
+                        className="text-xl font-bold pt-4"
                         style={{ color: mainColor }}
                       >
                         {formatPrice(product)}
                       </div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-2 pt-4">
                         <p
                           className="text-sm font-medium"
                           style={{ color: mainColor }}
