@@ -76,11 +76,11 @@ export function ProductImageCarousel({
 
   return (
     <div className="relative w-full">
-      <div className="relative overflow-hidden rounded-lg w-full bg-gray-100 flex items-center justify-center" style={{ aspectRatio: '3/4' }}>
+      <div className="relative overflow-hidden rounded-lg w-full bg-gray-100 flex items-center justify-center">
         <img
           src={images[currentIndex]}
           alt={`${productTitle} - Imagem ${currentIndex + 1}`}
-          className="w-full h-full object-contain"
+          className="max-w-full max-h-full w-auto h-auto object-contain"
         />
         
         {images.length > 1 && (

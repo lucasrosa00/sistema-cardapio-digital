@@ -154,7 +154,30 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     const MAX_FILE_SIZE = 1.5 * 1024 * 1024; // 1.5MB em bytes
 
     const remainingSlots = maxImages - images.length;
-    const allFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
+    // Aceita imagens e arquivos HEIC/HEIF
+    const allFiles = Array.from(files).filter((file) => {
+      const isImage = file.type.startsWith('image/');
+      const isHeic = file.name.toLowerCase().endsWith('.heic') || 
+                     file.name.toLowerCase().endsWith('.heif') ||
+                     file.type === 'image/heic' || 
+                     file.type === 'image/heif';
+      return isImage || isHeic;
+    });
+
+    // Verificar arquivos HEIC e mostrar aviso
+    const heicFiles = allFiles.filter((file) => {
+      return file.name.toLowerCase().endsWith('.heic') || 
+             file.name.toLowerCase().endsWith('.heif') ||
+             file.type === 'image/heic' || 
+             file.type === 'image/heif';
+    });
+
+    if (heicFiles.length > 0) {
+      const heicCount = heicFiles.length;
+      const fileText = heicCount === 1 ? 'arquivo HEIC' : 'arquivos HEIC';
+      const message = `${heicCount} ${fileText} ${heicCount === 1 ? 'foi' : 'foram'} detectado(s). Arquivos HEIC podem não ser suportados por todos os navegadores. Se houver erro, tente converter para JPEG ou PNG antes de enviar.`;
+      alert(message);
+    }
     
     // Verificar tamanho dos arquivos antes de processar
     const oversizedFiles = allFiles.filter((file) => file.size > MAX_FILE_SIZE);
@@ -184,13 +207,41 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       // A qualidade é ajustada automaticamente baseada no tamanho de cada arquivo
       const compressedImages = await Promise.all(
         filesToProcess.map(async (file) => {
-          if (file.size > MAX_FILE_SIZE) {
-            // Para arquivos que excedem o limite, usa qualidade adaptativa e força limite de 1.5MB
-            const quality = getQualityByFileSize(file.size);
-            return await compressImageToSize(file, MAX_FILE_SIZE, quality);
-          } else {
-            // Usa compressão adaptativa baseada no tamanho do arquivo
-            return await compressImage(file);
+          try {
+            // Verificar se é arquivo HEIC
+            const isHeic = file.name.toLowerCase().endsWith('.heic') || 
+                          file.name.toLowerCase().endsWith('.heif') ||
+                          file.type === 'image/heic' || 
+                          file.type === 'image/heif';
+            
+            if (isHeic) {
+              // Tentar processar HEIC - pode falhar se o navegador não suportar
+              try {
+                if (file.size > MAX_FILE_SIZE) {
+                  const quality = getQualityByFileSize(file.size);
+                  return await compressImageToSize(file, MAX_FILE_SIZE, quality);
+                } else {
+                  return await compressImage(file);
+                }
+              } catch (heicError) {
+                throw new Error(`Arquivo HEIC "${file.name}" não pode ser processado. Por favor, converta para JPEG ou PNG antes de enviar.`);
+              }
+            }
+
+            if (file.size > MAX_FILE_SIZE) {
+              // Para arquivos que excedem o limite, usa qualidade adaptativa e força limite de 1.5MB
+              const quality = getQualityByFileSize(file.size);
+              return await compressImageToSize(file, MAX_FILE_SIZE, quality);
+            } else {
+              // Usa compressão adaptativa baseada no tamanho do arquivo
+              return await compressImage(file);
+            }
+          } catch (fileError) {
+            // Se for erro específico do arquivo, relançar com nome do arquivo
+            if (fileError instanceof Error && fileError.message.includes('HEIC')) {
+              throw fileError;
+            }
+            throw new Error(`Erro ao processar "${file.name}": ${fileError instanceof Error ? fileError.message : 'Erro desconhecido'}`);
           }
         })
       );
@@ -199,7 +250,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       onImagesChange([...images, ...compressedImages]);
     } catch (error) {
       console.error('Erro ao comprimir imagens:', error);
-      alert('Erro ao processar imagens. Tente novamente.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao processar imagens. Tente novamente.';
+      alert(errorMessage);
     }
 
     // Reset input
@@ -239,7 +291,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.heic,.heif"
         multiple
         onChange={handleFileChange}
         className="hidden"
