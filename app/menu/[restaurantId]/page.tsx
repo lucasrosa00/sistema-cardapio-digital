@@ -7,6 +7,7 @@ import type { PublicMenuDto, CategoryWithProductsDto, SubcategoryWithProductsDto
 import { CategoryTabs } from '@/components/cardapio/CategoryTabs';
 import { SubcategoryList } from '@/components/cardapio/SubcategoryList';
 import { ProductList } from '@/components/cardapio/ProductList';
+import { Favicon } from '@/components/Favicon';
 
 // Tipos locais para compatibilidade com componentes
 type Category = {
@@ -242,6 +243,7 @@ export default function CardapioPublicoPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
+      {config.logo && <Favicon url={`/api/favicon/${slug}`} />}
       {/* Cabeçalho */}
       <header
         className="sticky top-0 z-10 shadow-lg bg-white"
