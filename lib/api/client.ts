@@ -98,21 +98,30 @@ async function refreshToken(): Promise<string | null> {
 
       // O endpoint pode retornar:
       // 1. Uma string diretamente (o token)
-      // 2. Um objeto ApiResponse com data contendo o token
-      // 3. Um objeto com propriedade token
+      // 2. Um objeto ApiResponse com data contendo um objeto com token (data.token)
+      // 3. Um objeto ApiResponse com data contendo o token diretamente (data como string)
+      // 4. Um objeto com propriedade token no nível raiz
       let newToken: string | null = null;
 
       if (typeof data === 'string') {
         // Caso 1: Retorna string diretamente
         newToken = data;
       } else if (data && typeof data === 'object') {
-        // Caso 2 ou 3: Retorna objeto
+        // Caso 2, 3 ou 4: Retorna objeto
         const obj = data as Record<string, unknown>;
-        if ('data' in obj && typeof obj.data === 'string') {
-          // ApiResponse<string>
+        
+        // Verificar se data é um objeto e contém token (data.token)
+        if ('data' in obj && obj.data && typeof obj.data === 'object') {
+          const dataObj = obj.data as Record<string, unknown>;
+          if ('token' in dataObj && typeof dataObj.token === 'string') {
+            // ApiResponse com data.token
+            newToken = dataObj.token as string;
+          }
+        } else if ('data' in obj && typeof obj.data === 'string') {
+          // ApiResponse<string> - data é uma string
           newToken = obj.data as string;
         } else if ('token' in obj && typeof obj.token === 'string') {
-          // Objeto com propriedade token
+          // Objeto com propriedade token no nível raiz
           newToken = obj.token as string;
         }
       }
@@ -121,6 +130,9 @@ async function refreshToken(): Promise<string | null> {
         updateToken(newToken);
         return newToken;
       }
+    } else {
+      const errorText = await response.text().catch(() => 'Não foi possível ler o erro');
+      console.error('Erro ao renovar token. Status:', response.status, 'Erro:', errorText);
     }
 
     return null;

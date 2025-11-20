@@ -8,7 +8,10 @@ import { useSubcategoriesStore } from '@/store/subcategoriesStore';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
+import { Select } from '@/components/ui/Select';
 import { Product } from '@/lib/mockData';
+
+const ITEMS_PER_PAGE = 12;
 
 export default function ProdutosPage() {
   const router = useRouter();
@@ -36,6 +39,49 @@ export default function ProdutosPage() {
   const subcategories = restaurantId ? getSubcategoriesByRestaurant(restaurantId) : [];
 
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterCategoryId, setFilterCategoryId] = useState<number | null>(null);
+  const [filterSubcategoryId, setFilterSubcategoryId] = useState<number | null>(null);
+
+  // Resetar subcategoria quando categoria mudar
+  useEffect(() => {
+    setFilterSubcategoryId(null);
+  }, [filterCategoryId]);
+
+  // Resetar página quando filtros mudarem
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterCategoryId, filterSubcategoryId]);
+
+  // Filtrar produtos baseado nos filtros
+  const filteredProducts = products.filter((product) => {
+    if (filterCategoryId && product.categoryId !== filterCategoryId) {
+      return false;
+    }
+    if (filterSubcategoryId && product.subcategoryId !== filterSubcategoryId) {
+      return false;
+    }
+    return true;
+  });
+
+  // Filtrar subcategorias baseado na categoria selecionada
+  const filteredSubcategories = filterCategoryId
+    ? subcategories.filter((sub) => sub.categoryId === filterCategoryId)
+    : [];
+
+  // Ajustar página quando o número de itens mudar (ex: após deletar)
+  useEffect(() => {
+    const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [filteredProducts.length, currentPage]);
+
+  // Calcular paginação
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
   const getCategoryName = (categoryId: number) => {
     const category = categories.find((c) => c.id === categoryId);
@@ -94,7 +140,7 @@ export default function ProdutosPage() {
                 ← Voltar
               </Button>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center mb-4">
               <h1 className="text-2xl font-bold text-gray-900">Produtos</h1>
               <Button
                 variant="primary"
@@ -102,6 +148,57 @@ export default function ProdutosPage() {
               >
                 Cadastrar
               </Button>
+            </div>
+
+            {/* Filtros */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Select
+                label="Filtrar por Categoria"
+                value={filterCategoryId ? String(filterCategoryId) : ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFilterCategoryId(value ? Number(value) : null);
+                }}
+                options={[
+                  { value: '', label: 'Todas as categorias' },
+                  ...categories.map((cat) => ({
+                    value: String(cat.id),
+                    label: cat.title || `Categoria ${cat.id}`,
+                  })),
+                ]}
+                className="w-full"
+              />
+              <Select
+                label="Filtrar por Subcategoria"
+                value={filterSubcategoryId ? String(filterSubcategoryId) : ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFilterSubcategoryId(value ? Number(value) : null);
+                }}
+                disabled={!filterCategoryId}
+                options={[
+                  { value: '', label: 'Todas as subcategorias' },
+                  ...filteredSubcategories.map((sub) => ({
+                    value: String(sub.id),
+                    label: sub.title || `Subcategoria ${sub.id}`,
+                  })),
+                ]}
+                className="w-full"
+              />
+              {(filterCategoryId || filterSubcategoryId) && (
+                <div className="flex items-end">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setFilterCategoryId(null);
+                      setFilterSubcategoryId(null);
+                    }}
+                    className="w-full"
+                  >
+                    Limpar Filtros
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -119,9 +216,9 @@ export default function ProdutosPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Título
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Descrição
-                  </th>
+                  </th> */}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Categoria
                   </th>
@@ -139,20 +236,22 @@ export default function ProdutosPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-4 text-center">
+                    <td colSpan={7} className="px-6 py-4 text-center">
                       <div className="flex justify-center">
                         <Spinner size="md" color="#3b82f6" />
                       </div>
                     </td>
                   </tr>
-                ) : products.length === 0 ? (
+                ) : filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
-                      Nenhum produto encontrado
+                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                      {products.length === 0
+                        ? 'Nenhum produto encontrado'
+                        : 'Nenhum produto encontrado com os filtros selecionados'}
                     </td>
                   </tr>
                 ) : (
-                  products.map((product) => (
+                  paginatedProducts.map((product) => (
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {product.id}
@@ -163,9 +262,9 @@ export default function ProdutosPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {product.title}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                      {/* <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                         {product.description}
-                      </td>
+                      </td> */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {getCategoryName(product.categoryId)}
                       </td>
@@ -201,6 +300,39 @@ export default function ProdutosPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Controles de Paginação */}
+          {filteredProducts.length > ITEMS_PER_PAGE && (
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-700 text-center sm:text-left">
+                  Mostrando {startIndex + 1} a {Math.min(endIndex, filteredProducts.length)} de {filteredProducts.length} produto{filteredProducts.length !== 1 ? 's' : ''}
+                  {filterCategoryId || filterSubcategoryId ? ' (filtrados)' : ''}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm"
+                  >
+                    Anterior
+                  </Button>
+                  <div className="text-sm text-gray-700 whitespace-nowrap">
+                    Página {currentPage} de {totalPages}
+                  </div>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 text-sm"
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

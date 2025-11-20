@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 
+const ITEMS_PER_PAGE = 12;
+
 export default function SubcategoriasPage() {
   const router = useRouter();
   const restaurantId = useAuthStore((state) => state.restaurantId);
@@ -33,6 +35,26 @@ export default function SubcategoriasPage() {
   const subcategories = restaurantId ? getFilteredSubcategories(restaurantId) : [];
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Resetar para página 1 quando o filtro mudar
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterActive]);
+
+  // Ajustar página quando o número de itens mudar (ex: após deletar)
+  useEffect(() => {
+    const totalPages = Math.ceil(subcategories.length / ITEMS_PER_PAGE);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [subcategories.length, currentPage]);
+
+  // Calcular paginação
+  const totalPages = Math.ceil(subcategories.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedSubcategories = subcategories.slice(startIndex, endIndex);
 
   const getCategoryName = (categoryId: number) => {
     const category = categories.find((c) => c.id === categoryId);
@@ -163,7 +185,7 @@ export default function SubcategoriasPage() {
                     </td>
                   </tr>
                 ) : (
-                  subcategories.map((subcategory) => (
+                  paginatedSubcategories.map((subcategory) => (
                     <tr key={subcategory.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {subcategory.id}
@@ -206,6 +228,38 @@ export default function SubcategoriasPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Controles de Paginação */}
+          {subcategories.length > ITEMS_PER_PAGE && (
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-700 text-center sm:text-left">
+                  Mostrando {startIndex + 1} a {Math.min(endIndex, subcategories.length)} de {subcategories.length} subcategorias
+                </div>
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm"
+                  >
+                    Anterior
+                  </Button>
+                  <div className="text-sm text-gray-700 whitespace-nowrap">
+                    Página {currentPage} de {totalPages}
+                  </div>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 text-sm"
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
