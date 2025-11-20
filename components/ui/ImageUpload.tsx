@@ -113,9 +113,38 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     });
   };
 
+  // Função para calcular a qualidade de compressão baseada no tamanho do arquivo
+  const getQualityByFileSize = (fileSizeBytes: number): number => {
+    const fileSizeMB = fileSizeBytes / (1024 * 1024); // Converte bytes para MB
+    
+    // Escala progressiva de qualidade baseada no tamanho
+    // Quanto maior o arquivo, menor a qualidade para reduzir mais o tamanho
+    if (fileSizeMB >= 15) {
+      return 0.1; // Para arquivos de 15MB ou mais, usa qualidade mínima
+    } else if (fileSizeMB >= 10) {
+      return 0.15;
+    } else if (fileSizeMB >= 7) {
+      return 0.2;
+    } else if (fileSizeMB >= 5) {
+      return 0.3;
+    } else if (fileSizeMB >= 3) {
+      return 0.4;
+    } else if (fileSizeMB >= 1.5) {
+      return 0.5;
+    } else if (fileSizeMB >= 1) {
+      return 0.6;
+    } else if (fileSizeMB >= 0.5) {
+      return 0.7;
+    } else {
+      return 0.8; // Para arquivos pequenos, mantém qualidade alta
+    }
+  };
+
   // Função para comprimir e redimensionar imagem (versão padrão)
+  // A qualidade é ajustada automaticamente baseada no tamanho do arquivo
   const compressImage = (file: File): Promise<string> => {
-    return compressImageToSize(file, Infinity, 0.8);
+    const quality = getQualityByFileSize(file.size);
+    return compressImageToSize(file, Infinity, quality);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,14 +181,15 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
     try {
       // Comprime todas as imagens
-      // Se o arquivo original for maior que 1.5MB, usa compressão agressiva
+      // A qualidade é ajustada automaticamente baseada no tamanho de cada arquivo
       const compressedImages = await Promise.all(
         filesToProcess.map(async (file) => {
           if (file.size > MAX_FILE_SIZE) {
-            // Usa compressão agressiva para arquivos grandes
-            return await compressImageToSize(file, MAX_FILE_SIZE, 0.7);
+            // Para arquivos que excedem o limite, usa qualidade adaptativa e força limite de 1.5MB
+            const quality = getQualityByFileSize(file.size);
+            return await compressImageToSize(file, MAX_FILE_SIZE, quality);
           } else {
-            // Usa compressão padrão para arquivos pequenos
+            // Usa compressão adaptativa baseada no tamanho do arquivo
             return await compressImage(file);
           }
         })
