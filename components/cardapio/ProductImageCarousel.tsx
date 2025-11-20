@@ -18,30 +18,44 @@ export function ProductImageCarousel({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(true);
 
-  if (images.length === 0) {
-    return null;
-  }
-
   // Detectar se é mobile ou desktop
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    let isMounted = true;
+    
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint do Tailwind
+      if (isMounted && typeof window !== 'undefined') {
+        setIsMobile(window.innerWidth < 768); // md breakpoint do Tailwind
+      }
     };
 
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => {
+      isMounted = false;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', checkMobile);
+      }
+    };
   }, []);
 
   // Auto-play: troca de imagem a cada 3 segundos apenas no mobile (se não estiver desabilitado)
   useEffect(() => {
     if (images.length <= 1 || !isMobile || disableAutoPlay) return;
 
+    let isMounted = true;
+    
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+      if (isMounted) {
+        setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+      }
     }, 3000);
 
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [images.length, isMobile, disableAutoPlay]);
 
   const goToPrevious = () => {
@@ -56,21 +70,28 @@ export function ProductImageCarousel({
     setCurrentIndex(index);
   };
 
+  if (images.length === 0) {
+    return null;
+  }
 
   return (
     <div className="relative w-full">
-      <div className="relative overflow-hidden rounded-lg w-full" style={{ aspectRatio: '1/1' }}>
+      <div className="relative overflow-hidden rounded-lg w-full bg-gray-100 flex items-center justify-center" style={{ aspectRatio: '3/4' }}>
         <img
           src={images[currentIndex]}
           alt={`${productTitle} - Imagem ${currentIndex + 1}`}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
         
         {images.length > 1 && (
           <>
             {/* Botões de navegação */}
             <button
-              onClick={goToPrevious}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                goToPrevious();
+              }}
               className={`${alwaysShowControls ? 'block' : 'hidden md:block'} absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors z-10`}
               aria-label="Imagem anterior"
             >
@@ -89,7 +110,11 @@ export function ProductImageCarousel({
               </svg>
             </button>
             <button
-              onClick={goToNext}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                goToNext();
+              }}
               className={`${alwaysShowControls ? 'block' : 'hidden md:block'} absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors z-10`}
               aria-label="Próxima imagem"
             >
@@ -113,7 +138,11 @@ export function ProductImageCarousel({
               {images.map((_, index) => (
                 <button
                   key={index}
-                  onClick={() => goToSlide(index)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    goToSlide(index);
+                  }}
                   className={`
                     w-2 h-2 rounded-full transition-all
                     ${currentIndex === index

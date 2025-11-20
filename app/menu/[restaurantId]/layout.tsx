@@ -14,34 +14,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const restaurant = menuData.restaurant;
     
     const restaurantName = restaurant.restaurantName || 'Cardápio Digital';
-    const logo = restaurant.logo;
 
     const metadata: Metadata = {
-      title: restaurantName,
+      title: restaurantName + " - Cardápio Digital",
       description: `Cardápio digital de ${restaurantName}`,
     };
-
-    // Se houver logo, adiciona o favicon
-    if (logo) {
-      const faviconUrl = `/api/favicon/${slug}`;
-      
-      // Detecta o tipo MIME da logo
-      let imageType = 'image/png';
-      if (logo.startsWith('data:')) {
-        const match = logo.match(/data:([^;]+)/);
-        if (match) {
-          imageType = match[1];
-        }
-      }
-      
-      metadata.icons = {
-        icon: [
-          { url: faviconUrl, type: imageType },
-        ],
-        shortcut: faviconUrl,
-        apple: faviconUrl,
-      };
-    }
 
     return metadata;
   } catch (error) {

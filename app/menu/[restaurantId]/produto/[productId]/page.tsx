@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { restaurantService } from '@/lib/api/restaurantService';
 import type { PublicMenuDto } from '@/lib/api/types';
 import { ProductImageCarousel } from '@/components/cardapio/ProductImageCarousel';
-import { Favicon } from '@/components/Favicon';
 
 type Product = {
   id: number;
@@ -160,7 +159,6 @@ export default function ProdutoDetalhesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      {config.logo && <Favicon url={`/api/favicon/${slug}`} />}
       {/* Cabeçalho */}
       <header
         className="sticky top-0 z-30 shadow-lg bg-white"
