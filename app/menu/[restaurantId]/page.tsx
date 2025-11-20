@@ -7,6 +7,7 @@ import type { PublicMenuDto, CategoryWithProductsDto, SubcategoryWithProductsDto
 import { CategoryTabs } from '@/components/cardapio/CategoryTabs';
 import { SubcategoryList } from '@/components/cardapio/SubcategoryList';
 import { ProductList } from '@/components/cardapio/ProductList';
+import { Spinner } from '@/components/ui/Spinner';
 
 // Tipos locais para compatibilidade com componentes
 type Category = {
@@ -178,7 +179,7 @@ export default function CardapioPublicoPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-lg text-gray-600">Carregando cardápio...</p>
+          <Spinner size="lg" color="#3b82f6" />
         </div>
       </div>
     );

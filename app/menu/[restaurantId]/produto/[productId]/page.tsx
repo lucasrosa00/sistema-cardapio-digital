@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { restaurantService } from '@/lib/api/restaurantService';
 import type { PublicMenuDto } from '@/lib/api/types';
 import { ProductImageCarousel } from '@/components/cardapio/ProductImageCarousel';
+import { Spinner } from '@/components/ui/Spinner';
 
 type Product = {
   id: number;
@@ -125,7 +126,7 @@ export default function ProdutoDetalhesPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-lg text-gray-600">Carregando produto...</p>
+          <Spinner size="lg" color="#3b82f6" />
         </div>
       </div>
     );

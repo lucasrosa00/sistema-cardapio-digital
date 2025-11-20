@@ -8,16 +8,17 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Spinner } from '@/components/ui/Spinner';
 
 export default function EditarCategoriaPage() {
   const router = useRouter();
   const params = useParams();
   const id = Number(params.id);
-  
+
   const restaurantId = useAuthStore((state) => state.restaurantId);
   const { getCategoriesByRestaurant, loadCategories, isLoading } = useCategoriesStore();
   const updateCategory = useCategoriesStore((state) => state.updateCategory);
-  
+
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const category = categories.find((cat) => cat.id === id);
 
@@ -113,9 +114,9 @@ export default function EditarCategoriaPage() {
     const checked = (e.target as HTMLInputElement).checked;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' 
-        ? checked 
-        : type === 'number' 
+      [name]: type === 'checkbox'
+        ? checked
+        : type === 'number'
           ? value === '' ? '' : Number(value) || ''
           : value,
     }));
@@ -131,7 +132,9 @@ export default function EditarCategoriaPage() {
       <div className="bg-gray-50 min-h-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-gray-600 text-center">Carregando...</p>
+            <div className="flex justify-center">
+              <Spinner size="md" color="#3b82f6" />
+            </div>
           </div>
         </div>
       </div>

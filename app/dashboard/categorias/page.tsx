@@ -6,6 +6,7 @@ import { useCategoriesStore } from '@/store/categoriesStore';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Spinner } from '@/components/ui/Spinner';
 
 export default function CategoriasPage() {
   const router = useRouter();
@@ -137,8 +138,10 @@ export default function CategoriasPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                      Carregando...
+                    <td colSpan={5} className="px-6 py-4 text-center">
+                      <div className="flex justify-center">
+                        <Spinner size="md" color="#3b82f6" />
+                      </div>
                     </td>
                   </tr>
                 ) : categories.length === 0 ? (

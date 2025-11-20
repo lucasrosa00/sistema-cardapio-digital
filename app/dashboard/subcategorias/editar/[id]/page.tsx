@@ -9,17 +9,18 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Spinner } from '@/components/ui/Spinner';
 
 export default function EditarSubcategoriaPage() {
   const router = useRouter();
   const params = useParams();
   const id = Number(params.id);
-  
+
   const restaurantId = useAuthStore((state) => state.restaurantId);
   const { getSubcategoriesByRestaurant, loadSubcategories, isLoading: isLoadingSubcategories } = useSubcategoriesStore();
   const updateSubcategory = useSubcategoriesStore((state) => state.updateSubcategory);
   const { getCategoriesByRestaurant, loadCategories, isLoading: isLoadingCategories } = useCategoriesStore();
-  
+
   const subcategories = restaurantId ? getSubcategoriesByRestaurant(restaurantId) : [];
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const subcategory = subcategories.find((sub) => sub.id === id);
@@ -60,8 +61,8 @@ export default function EditarSubcategoriaPage() {
   }, [subcategory]);
 
   // Calcula a maior ordem atual (global, todas as subcategorias do restaurante)
-  const maxOrder = subcategories.length === 0 
-    ? 1 
+  const maxOrder = subcategories.length === 0
+    ? 1
     : Math.max(...subcategories.map(sub => sub.order || 0));
 
   // Gera as opções do select de ordem baseado na categoria selecionada
@@ -136,7 +137,7 @@ export default function EditarSubcategoriaPage() {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'number' 
+      [name]: type === 'number'
         ? value === '' ? '' : Number(value) || ''
         : value,
     }));
@@ -160,7 +161,9 @@ export default function EditarSubcategoriaPage() {
       <div className="bg-gray-50 min-h-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-gray-600 text-center">Carregando...</p>
+            <div className="flex justify-center">
+              <Spinner size="md" color="#3b82f6" />
+            </div>
           </div>
         </div>
       </div>

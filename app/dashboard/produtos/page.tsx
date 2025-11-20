@@ -7,6 +7,7 @@ import { useCategoriesStore } from '@/store/categoriesStore';
 import { useSubcategoriesStore } from '@/store/subcategoriesStore';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
+import { Spinner } from '@/components/ui/Spinner';
 import { Product } from '@/lib/mockData';
 
 export default function ProdutosPage() {
@@ -138,8 +139,10 @@ export default function ProdutosPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
-                      Carregando...
+                    <td colSpan={8} className="px-6 py-4 text-center">
+                      <div className="flex justify-center">
+                        <Spinner size="md" color="#3b82f6" />
+                      </div>
                     </td>
                   </tr>
                 ) : products.length === 0 ? (
