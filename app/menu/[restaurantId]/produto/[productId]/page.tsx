@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { restaurantService } from '@/lib/api/restaurantService';
 import type { PublicMenuDto } from '@/lib/api/types';
 import { ProductImageCarousel } from '@/components/cardapio/ProductImageCarousel';
+import { MenuHeader } from '@/components/cardapio/MenuHeader';
 import { Spinner } from '@/components/ui/Spinner';
 
 type Product = {
@@ -168,48 +169,19 @@ export default function ProdutoDetalhesPage() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       {/* Cabeçalho */}
-      <header
-        className="sticky top-0 z-30 shadow-lg bg-white"
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-4">
-            {config.logo && (
-              <img
-                src={config.logo}
-                alt={config.restaurantName}
-                className="w-16 h-16 object-contain rounded-lg"
-              />
-            )}
-            <div className="flex-1">
-              <h1
-                className="text-2xl md:text-3xl font-bold"
-                style={{ color: config.mainColor }}
-              >
-                {config.restaurantName || 'Cardápio Digital'}
-              </h1>
-              <p className="text-sm mt-1 text-gray-600">
-                Cardápio Digital
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                const categoriaParam = searchParams.get('categoria');
-                const url = categoriaParam 
-                  ? `/menu/${slug}?categoria=${categoriaParam}`
-                  : `/menu/${slug}`;
-                router.push(url);
-              }}
-              className="px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-80"
-              style={{ 
-                backgroundColor: config.mainColor,
-                color: '#ffffff'
-              }}
-            >
-              Voltar
-            </button>
-          </div>
-        </div>
-      </header>
+      <MenuHeader
+        restaurantName={config.restaurantName}
+        mainColor={config.mainColor}
+        logo={config.logo}
+        showBackButton={true}
+        backUrl={(() => {
+          const categoriaParam = searchParams.get('categoria');
+          return categoriaParam 
+            ? `/menu/${slug}?categoria=${categoriaParam}`
+            : `/menu/${slug}`;
+        })()}
+        zIndex={30}
+      />
 
       {/* Conteúdo */}
       <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">

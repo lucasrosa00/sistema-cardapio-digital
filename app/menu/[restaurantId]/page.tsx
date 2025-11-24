@@ -7,6 +7,7 @@ import type { PublicMenuDto, CategoryWithProductsDto, SubcategoryWithProductsDto
 import { CategoryTabs } from '@/components/cardapio/CategoryTabs';
 import { SubcategoryList } from '@/components/cardapio/SubcategoryList';
 import { ProductList } from '@/components/cardapio/ProductList';
+import { MenuHeader } from '@/components/cardapio/MenuHeader';
 import { Spinner } from '@/components/ui/Spinner';
 
 // Tipos locais para compatibilidade com componentes
@@ -261,32 +262,12 @@ export default function CardapioPublicoPage() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       {/* Cabeçalho */}
-      <header
-        className="sticky top-0 z-10 shadow-lg bg-white"
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-4">
-            {config.logo && (
-              <img
-                src={config.logo}
-                alt={config.restaurantName}
-                className="w-16 h-16 object-contain rounded-lg"
-              />
-            )}
-            <div>
-              <h1
-                className="text-2xl md:text-3xl font-bold"
-                style={{ color: config.mainColor }}
-              >
-                {config.restaurantName || 'Cardápio Digital'}
-              </h1>
-              <p className="text-sm mt-1 text-gray-600">
-                Cardápio Digital
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
+      <MenuHeader
+        restaurantName={config.restaurantName}
+        mainColor={config.mainColor}
+        logo={config.logo}
+        zIndex={10}
+      />
 
       {/* Conteúdo */}
       <main className="max-w-6xl mx-auto py-8">
