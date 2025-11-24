@@ -9,6 +9,7 @@ interface ProductListProps {
   products: Product[];
   subcategories: Subcategory[];
   selectedSubcategoryId: number | null;
+  selectedCategoryId: number | null;
   mainColor: string;
   formatPrice: (product: Product) => string;
 }
@@ -17,6 +18,7 @@ export function ProductList({
   products,
   subcategories,
   selectedSubcategoryId,
+  selectedCategoryId,
   mainColor,
   formatPrice,
 }: ProductListProps) {
@@ -103,7 +105,14 @@ export function ProductList({
               {subcategoryProducts.map((product) => (
                 <div
                   key={product.id}
-                  onClick={() => router.push(`/menu/${restaurantId}/produto/${product.id}`)}
+                  onClick={() => {
+                    const url = `/menu/${restaurantId}/produto/${product.id}`;
+                    const params = new URLSearchParams();
+                    if (selectedCategoryId) {
+                      params.set('categoria', selectedCategoryId.toString());
+                    }
+                    router.push(`${url}${params.toString() ? `?${params.toString()}` : ''}`);
+                  }}
                   className="rounded-lg overflow-hidden transition-all bg-white border border-gray-200 cursor-pointer hover:shadow-lg hover:border-gray-300"
                 >
                   {/* Conteúdo superior: Título/Descrição e Imagem */}

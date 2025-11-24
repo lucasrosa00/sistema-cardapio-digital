@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { restaurantService } from '@/lib/api/restaurantService';
 import type { PublicMenuDto } from '@/lib/api/types';
 import { ProductImageCarousel } from '@/components/cardapio/ProductImageCarousel';
@@ -25,6 +25,7 @@ type Product = {
 export default function ProdutoDetalhesPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const slug = params.restaurantId as string;
   const productId = Number(params.productId);
 
@@ -144,7 +145,13 @@ export default function ProdutoDetalhesPage() {
             O produto que você está procurando não está disponível.
           </p>
           <button
-            onClick={() => router.push(`/menu/${slug}`)}
+            onClick={() => {
+              const categoriaParam = searchParams.get('categoria');
+              const url = categoriaParam 
+                ? `/menu/${slug}?categoria=${categoriaParam}`
+                : `/menu/${slug}`;
+              router.push(url);
+            }}
             className="px-6 py-2 rounded-lg font-medium transition-colors"
             style={{ 
               backgroundColor: config.mainColor,
@@ -185,7 +192,13 @@ export default function ProdutoDetalhesPage() {
               </p>
             </div>
             <button
-              onClick={() => router.push(`/menu/${slug}`)}
+              onClick={() => {
+                const categoriaParam = searchParams.get('categoria');
+                const url = categoriaParam 
+                  ? `/menu/${slug}?categoria=${categoriaParam}`
+                  : `/menu/${slug}`;
+                router.push(url);
+              }}
               className="px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-80"
               style={{ 
                 backgroundColor: config.mainColor,

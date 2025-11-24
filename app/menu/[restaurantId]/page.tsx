@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { restaurantService } from '@/lib/api/restaurantService';
 import type { PublicMenuDto, CategoryWithProductsDto, SubcategoryWithProductsDto, ProductDto } from '@/lib/api/types';
 import { CategoryTabs } from '@/components/cardapio/CategoryTabs';
@@ -44,6 +44,7 @@ type Product = {
 
 export default function CardapioPublicoPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const slug = params.restaurantId as string;
 
   const [menu, setMenu] = useState<PublicMenuDto | null>(null);
@@ -131,10 +132,26 @@ export default function CardapioPublicoPage() {
         const menuData = await restaurantService.getPublicMenu(slug);
         setMenu(menuData);
         
-        // Selecionar primeira categoria ativa por padrão
-        const firstActiveCategory = menuData.categories?.find(cat => cat.category.active);
-        if (firstActiveCategory) {
-          setSelectedCategoryId(firstActiveCategory.category.id);
+        // Verificar se há categoria na URL (query parameter)
+        const categoriaParam = searchParams.get('categoria');
+        if (categoriaParam) {
+          const categoriaId = Number(categoriaParam);
+          const categoryExists = menuData.categories?.some(cat => cat.category.id === categoriaId && cat.category.active);
+          if (categoryExists) {
+            setSelectedCategoryId(categoriaId);
+          } else {
+            // Se a categoria não existe ou não está ativa, selecionar primeira categoria ativa
+            const firstActiveCategory = menuData.categories?.find(cat => cat.category.active);
+            if (firstActiveCategory) {
+              setSelectedCategoryId(firstActiveCategory.category.id);
+            }
+          }
+        } else {
+          // Selecionar primeira categoria ativa por padrão
+          const firstActiveCategory = menuData.categories?.find(cat => cat.category.active);
+          if (firstActiveCategory) {
+            setSelectedCategoryId(firstActiveCategory.category.id);
+          }
         }
       } catch (error) {
         console.error('Erro ao carregar menu:', error);
@@ -147,7 +164,7 @@ export default function CardapioPublicoPage() {
     if (slug) {
       loadMenu();
     }
-  }, [slug]);
+  }, [slug, searchParams]);
 
 
   // Resetar subcategoria selecionada quando categoria mudar
@@ -309,6 +326,7 @@ export default function CardapioPublicoPage() {
                 products={filteredProducts}
                 subcategories={filteredSubcategories}
                 selectedSubcategoryId={selectedSubcategoryId}
+                selectedCategoryId={selectedCategoryId}
                 mainColor={config.mainColor}
                 formatPrice={formatPrice}
               />
