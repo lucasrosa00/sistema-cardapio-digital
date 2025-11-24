@@ -22,6 +22,11 @@ export default function ConfiguracoesPage() {
     restaurantName: '',
     mainColor: '#ff0000',
     logo: null as string | null,
+    backgroundImage: null as string | null,
+    paymentMethods: '',
+    address: '',
+    openingHours: '',
+    mapUrl: '',
   });
 
   const [errors, setErrors] = useState<{ restaurantName?: string }>({});
@@ -38,6 +43,11 @@ export default function ConfiguracoesPage() {
             restaurantName: config.restaurantName || restaurantName || '',
             mainColor: config.mainColor,
             logo: config.logo,
+            backgroundImage: config.backgroundImage,
+            paymentMethods: config.paymentMethods || '',
+            address: config.address || '',
+            openingHours: config.openingHours || '',
+            mapUrl: config.mapUrl || '',
           });
         } else {
           // Se não retornou config, usa valores padrão
@@ -45,6 +55,11 @@ export default function ConfiguracoesPage() {
             restaurantName: restaurantName || '',
             mainColor: '#ff0000',
             logo: null,
+            backgroundImage: null,
+            paymentMethods: '',
+            address: '',
+            openingHours: '',
+            mapUrl: '',
           });
         }
       }).catch((error) => {
@@ -54,6 +69,11 @@ export default function ConfiguracoesPage() {
           restaurantName: restaurantName || '',
           mainColor: '#ff0000',
           logo: null,
+          backgroundImage: null,
+          paymentMethods: '',
+          address: '',
+          openingHours: '',
+          mapUrl: '',
         });
       });
     }
@@ -85,6 +105,11 @@ export default function ConfiguracoesPage() {
         restaurantName: formData.restaurantName.trim(),
         mainColor: formData.mainColor,
         logo: formData.logo,
+        backgroundImage: formData.backgroundImage,
+        paymentMethods: formData.paymentMethods.trim() || null,
+        address: formData.address.trim() || null,
+        openingHours: formData.openingHours.trim() || null,
+        mapUrl: formData.mapUrl.trim() || null,
       });
 
       // Recarrega as configurações da API para garantir sincronização
@@ -95,6 +120,11 @@ export default function ConfiguracoesPage() {
           restaurantName: updatedConfig.restaurantName || '',
           mainColor: updatedConfig.mainColor,
           logo: updatedConfig.logo,
+          backgroundImage: updatedConfig.backgroundImage,
+          paymentMethods: updatedConfig.paymentMethods || '',
+          address: updatedConfig.address || '',
+          openingHours: updatedConfig.openingHours || '',
+          mapUrl: updatedConfig.mapUrl || '',
         });
       }
 
@@ -108,7 +138,7 @@ export default function ConfiguracoesPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -210,11 +240,78 @@ export default function ConfiguracoesPage() {
               ) : (
                 <ImageUpload
                   images={[]}
+                  onFilesChange={() => {}}
                   onImagesChange={handleLogoUpload}
                   maxImages={1}
                 />
               )}
             </div>
+
+            {/* <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Imagem de Fundo
+              </label>
+              <Input
+                label="URL da Imagem de Fundo"
+                name="backgroundImage"
+                type="text"
+                value={formData.backgroundImage || ''}
+                onChange={handleChange}
+                placeholder="https://exemplo.com/imagem.jpg"
+              />
+            </div> */}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Métodos de Pagamento
+              </label>
+              <textarea
+                name="paymentMethods"
+                value={formData.paymentMethods}
+                onChange={handleChange}
+                placeholder="Ex: Dinheiro, Cartão de Crédito, PIX, etc."
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Informações sobre formas de pagamento aceitas
+              </p>
+            </div>
+
+            <Input
+              label="Endereço"
+              name="address"
+              type="text"
+              value={formData.address}
+              onChange={handleChange}
+              placeholder="Ex: Rua Exemplo, 123 - Bairro, Cidade - Estado"
+            />
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Horário de Funcionamento
+              </label>
+              <textarea
+                name="openingHours"
+                value={formData.openingHours}
+                onChange={handleChange}
+                placeholder="Ex: Segunda a Sexta: 11h às 22h&#10;Sábado e Domingo: 12h às 23h"
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <Input
+              label="URL do Mapa"
+              name="mapUrl"
+              type="text"
+              value={formData.mapUrl}
+              onChange={handleChange}
+              placeholder="https://www.google.com/maps/embed?pb=..."
+            />
+            <p className="text-xs text-gray-500 -mt-2">
+              URL do iframe do Google Maps (embed)
+            </p>
 
             {/* Preview da identidade visual */}
             <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">

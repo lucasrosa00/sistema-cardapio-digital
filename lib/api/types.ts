@@ -26,8 +26,15 @@ export interface RestaurantConfigDto {
   restaurantName: string | null;
   mainColor: string | null;
   logo: string | null;
+  backgroundImage: string | null;
   darkMode: boolean;
   slug: string | null;
+  tableOrderEnabled: boolean;
+  paymentMethods: string | null;
+  address: string | null;
+  about: string | null;
+  openingHours: string | null;
+  mapUrl: string | null;
 }
 
 export interface LoginResponseDto {
@@ -133,8 +140,15 @@ export interface UpdateRestaurantConfigDto {
   restaurantName?: string | null;
   mainColor?: string | null;
   logo?: string | null;
+  backgroundImage?: string | null;
   darkMode?: boolean | null;
   slug?: string | null;
+  tableOrderEnabled?: boolean | null;
+  paymentMethods?: string | null;
+  address?: string | null;
+  about?: string | null;
+  openingHours?: string | null;
+  mapUrl?: string | null;
 }
 
 // ========== PUBLIC MENU ==========

@@ -113,10 +113,22 @@ export default function ProdutoDetalhesPage() {
     restaurantName: menu.restaurant.restaurantName || 'Cardápio Digital',
     mainColor: menu.restaurant.mainColor || '#ff0000',
     logo: menu.restaurant.logo || null,
+    backgroundImage: menu.restaurant.backgroundImage || null,
+    paymentMethods: menu.restaurant.paymentMethods || null,
+    address: menu.restaurant.address || null,
+    about: menu.restaurant.about || null,
+    openingHours: menu.restaurant.openingHours || null,
+    mapUrl: menu.restaurant.mapUrl || null,
   } : {
     restaurantName: 'Cardápio Digital',
     mainColor: '#ff0000',
     logo: null,
+    backgroundImage: null,
+    paymentMethods: null,
+    address: null,
+    about: null,
+    openingHours: null,
+    mapUrl: null,
   };
 
   const formatPrice = (price: number) => {
@@ -181,6 +193,12 @@ export default function ProdutoDetalhesPage() {
             : `/menu/${slug}`;
         })()}
         zIndex={30}
+        paymentMethods={config.paymentMethods}
+        backgroundImage={config.backgroundImage}
+        address={config.address}
+        about={config.about}
+        openingHours={config.openingHours}
+        mapUrl={config.mapUrl}
       />
 
       {/* Conteúdo */}

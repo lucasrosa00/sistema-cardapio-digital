@@ -6,6 +6,12 @@ export interface RestaurantConfig {
   restaurantName: string;
   mainColor: string;
   logo: string | null;
+  backgroundImage: string | null;
+  paymentMethods: string | null;
+  address: string | null;
+  about: string | null;
+  openingHours: string | null;
+  mapUrl: string | null;
 }
 
 // Função helper para converter RestaurantConfigDto para RestaurantConfig
@@ -13,6 +19,12 @@ const dtoToConfig = (dto: RestaurantConfigDto): RestaurantConfig => ({
   restaurantName: dto.restaurantName && dto.restaurantName.trim() !== '' ? dto.restaurantName : '',
   mainColor: dto.mainColor && dto.mainColor.trim() !== '' ? dto.mainColor : '#ff0000',
   logo: dto.logo && dto.logo.trim() !== '' ? dto.logo : null,
+  backgroundImage: dto.backgroundImage && dto.backgroundImage.trim() !== '' ? dto.backgroundImage : null,
+  paymentMethods: dto.paymentMethods && dto.paymentMethods.trim() !== '' ? dto.paymentMethods : null,
+  address: dto.address && dto.address.trim() !== '' ? dto.address : null,
+  about: dto.about && dto.about.trim() !== '' ? dto.about : null,
+  openingHours: dto.openingHours && dto.openingHours.trim() !== '' ? dto.openingHours : null,
+  mapUrl: dto.mapUrl && dto.mapUrl.trim() !== '' ? dto.mapUrl : null,
 });
 
 interface RestaurantConfigState {
@@ -59,6 +71,12 @@ export const useRestaurantConfigStore = create<RestaurantConfigState>()((set, ge
         restaurantName: updates.restaurantName !== undefined ? updates.restaurantName : undefined,
         mainColor: updates.mainColor !== undefined ? updates.mainColor : undefined,
         logo: updates.logo !== undefined ? updates.logo : undefined,
+        backgroundImage: updates.backgroundImage !== undefined ? updates.backgroundImage : undefined,
+        paymentMethods: updates.paymentMethods !== undefined ? updates.paymentMethods : undefined,
+        address: updates.address !== undefined ? updates.address : undefined,
+        about: updates.about !== undefined ? updates.about : undefined,
+        openingHours: updates.openingHours !== undefined ? updates.openingHours : undefined,
+        mapUrl: updates.mapUrl !== undefined ? updates.mapUrl : undefined,
       });
       const updatedConfig = dtoToConfig(updatedConfigDto);
       // Atualiza no store
