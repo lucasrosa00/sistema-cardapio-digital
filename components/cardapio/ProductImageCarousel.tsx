@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 interface ProductImageCarouselProps {
   images: string[];
@@ -21,9 +22,9 @@ export function ProductImageCarousel({
   // Detectar se é mobile ou desktop
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     let isMounted = true;
-    
+
     const checkMobile = () => {
       if (isMounted && typeof window !== 'undefined') {
         setIsMobile(window.innerWidth < 768); // md breakpoint do Tailwind
@@ -45,7 +46,7 @@ export function ProductImageCarousel({
     if (images.length <= 1 || !isMobile || disableAutoPlay) return;
 
     let isMounted = true;
-    
+
     const interval = setInterval(() => {
       if (isMounted) {
         setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
@@ -78,11 +79,14 @@ export function ProductImageCarousel({
     <div className="relative w-full">
       <div className="relative overflow-hidden rounded-lg w-full bg-gray-100 flex items-center justify-center">
         <img
-          src={images[currentIndex]}
+          src={getImageUrl(images[currentIndex])}
           alt={`${productTitle} - Imagem ${currentIndex + 1}`}
           className="max-w-full max-h-full w-auto h-auto object-contain"
+          onError={(e) => {
+            console.error('Erro ao carregar imagem:', images[currentIndex]);
+          }}
         />
-        
+
         {images.length > 1 && (
           <>
             {/* Botões de navegação */}

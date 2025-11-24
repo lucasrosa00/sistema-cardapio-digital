@@ -64,7 +64,7 @@ export default function CardapioPublicoPage() {
     order: cat.category.order,
   })) || [];
 
-  const subcategories: Subcategory[] = menu?.categories?.flatMap(cat => 
+  const subcategories: Subcategory[] = menu?.categories?.flatMap(cat =>
     cat.subcategories?.map(sub => ({
       id: sub.subcategory.id,
       restaurantId: sub.subcategory.restaurantId,
@@ -77,7 +77,7 @@ export default function CardapioPublicoPage() {
 
   const products: Product[] = menu?.categories?.flatMap(cat => {
     // Produtos das subcategorias
-    const subcategoryProducts = cat.subcategories?.flatMap(sub => 
+    const subcategoryProducts = cat.subcategories?.flatMap(sub =>
       (sub.products || []).map(prod => ({
         id: prod.id,
         restaurantId: prod.restaurantId,
@@ -93,7 +93,7 @@ export default function CardapioPublicoPage() {
         order: prod.order,
       })) || []
     ) || [];
-    
+
     // Produtos diretamente na categoria (sem subcategoria)
     const categoryProducts = (cat.products || []).map(prod => ({
       id: prod.id,
@@ -109,7 +109,7 @@ export default function CardapioPublicoPage() {
       active: prod.active,
       order: prod.order,
     }));
-    
+
     // Combinar produtos de subcategorias e da categoria
     return [...subcategoryProducts, ...categoryProducts];
   }) || [];
@@ -132,7 +132,7 @@ export default function CardapioPublicoPage() {
       try {
         const menuData = await restaurantService.getPublicMenu(slug);
         setMenu(menuData);
-        
+
         // Verificar se há categoria na URL (query parameter)
         const categoriaParam = searchParams.get('categoria');
         if (categoriaParam) {
@@ -229,8 +229,8 @@ export default function CardapioPublicoPage() {
   // Filtrar subcategorias da categoria selecionada
   const filteredSubcategories = selectedCategoryId
     ? subcategories
-        .filter((sub) => sub.categoryId === selectedCategoryId && sub.active)
-        .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .filter((sub) => sub.categoryId === selectedCategoryId && sub.active)
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
     : [];
 
   // Filtrar produtos da categoria selecionada

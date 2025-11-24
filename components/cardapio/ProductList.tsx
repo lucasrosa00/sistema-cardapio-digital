@@ -56,7 +56,7 @@ export function ProductList({
       // Produtos sem subcategoria (0) sempre aparecem primeiro
       if (a === 0) return -1;
       if (b === 0) return 1;
-      
+
       const subA = subcategories.find((s) => s.id === a);
       const subB = subcategories.find((s) => s.id === b);
       return (subA?.order || 0) - (subB?.order || 0);
