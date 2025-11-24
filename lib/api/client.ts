@@ -254,6 +254,108 @@ async function apiRequest<T>(
   }
 }
 
+// Função para fazer upload de arquivo (multipart/form-data)
+async function apiFileUpload<T>(
+  endpoint: string,
+  file: File
+): Promise<ApiResponse<T>> {
+  const token = getToken();
+  
+  const getBaseUrl = (): string => {
+    if (typeof window === 'undefined') {
+      return process.env.NEXT_PUBLIC_API_URL || 'http://72.60.7.234:8000';
+    }
+    return '/api/proxy';
+  };
+
+  const BASE_URL = getBaseUrl();
+  
+  // Se estiver usando proxy, remover /api do endpoint (o proxy já adiciona)
+  const finalEndpoint = BASE_URL.startsWith('/api/proxy') && endpoint.startsWith('/api/')
+    ? endpoint.replace('/api', '')
+    : endpoint;
+  
+  const url = `${BASE_URL}${finalEndpoint}`;
+
+  // Criar FormData
+  // A API espera o campo 'files' (plural), não 'file'
+  const formData = new FormData();
+  formData.append('files', file);
+
+  const headers: Record<string, string> = {};
+  
+  // NÃO definir Content-Type manualmente - o browser define automaticamente com boundary
+  // Adiciona token de autenticação se existir
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    let response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    // Se o token expirou (401), tentar renovar
+    if (response.status === 401 && token && typeof window !== 'undefined') {
+      const newToken = await refreshToken();
+      
+      if (newToken) {
+        headers['Authorization'] = `Bearer ${newToken}`;
+        response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+      } else {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        throw new Error(`Erro na requisição: ${response.status} ${response.statusText}`);
+      }
+      throw new Error(errorData.message || errorData.errors?.join(', ') || 'Erro na requisição');
+    }
+
+    const contentType = response.headers.get('content-type');
+    let data: ApiResponse<T>;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      if (text) {
+        data = JSON.parse(text);
+      } else {
+        throw new Error('Resposta vazia');
+      }
+    }
+
+    if (!data.success) {
+      const errorMessage = data.message || data.errors?.join(', ') || 'Erro na requisição';
+      throw new Error(errorMessage);
+    }
+
+    return data;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Sessão expirada')) {
+      throw error;
+    }
+    
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Erro desconhecido na requisição');
+  }
+}
+
 // Métodos HTTP
 export const api = {
   get: <T>(endpoint: string): Promise<ApiResponse<T>> => 
@@ -273,5 +375,8 @@ export const api = {
 
   delete: <T>(endpoint: string): Promise<ApiResponse<T>> => 
     apiRequest<T>(endpoint, { method: 'DELETE' }),
+
+  uploadFile: <T>(endpoint: string, file: File): Promise<ApiResponse<T>> =>
+    apiFileUpload<T>(endpoint, file),
 };
 

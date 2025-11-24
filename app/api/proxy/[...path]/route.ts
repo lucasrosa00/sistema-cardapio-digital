@@ -62,10 +62,12 @@ async function handleRequest(
     const searchParams = request.nextUrl.searchParams.toString();
     const fullUrl = searchParams ? `${url}?${searchParams}` : url;
 
+    // Verificar se é multipart/form-data (upload de arquivo)
+    const requestContentType = request.headers.get('content-type') || '';
+    const isMultipart = requestContentType.includes('multipart/form-data');
+
     // Obter headers da requisição original
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+    const headers: Record<string, string> = {};
 
     // Copiar Authorization header se existir
     const authHeader = request.headers.get('Authorization');
@@ -81,9 +83,37 @@ async function handleRequest(
 
     // Adicionar body para POST e PUT
     if (method === 'POST' || method === 'PUT') {
-      const body = await request.text();
-      if (body) {
-        fetchOptions.body = body;
+      if (isMultipart) {
+        // Para multipart/form-data, reconstruir o FormData corretamente
+        const incomingFormData = await request.formData();
+        
+        // Criar novo FormData para garantir compatibilidade
+        const newFormData = new FormData();
+        
+        // Copiar todos os campos, especialmente os arquivos
+        for (const [key, value] of incomingFormData.entries()) {
+          // Verificar se é File
+          if (value instanceof File) {
+            // Para arquivos, criar um novo File a partir do Blob para garantir compatibilidade
+            const arrayBuffer = await value.arrayBuffer();
+            const blob = new Blob([arrayBuffer], { type: value.type });
+            const newFile = new File([blob], value.name, { type: value.type });
+            newFormData.append(key, newFile);
+          } else {
+            // Para strings e outros valores
+            newFormData.append(key, value);
+          }
+        }
+        
+        fetchOptions.body = newFormData;
+        // Não definir Content-Type - o fetch define automaticamente com boundary
+      } else {
+        // Para JSON, definir Content-Type e passar como texto
+        headers['Content-Type'] = 'application/json';
+        const body = await request.text();
+        if (body) {
+          fetchOptions.body = body;
+        }
       }
     }
 

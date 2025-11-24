@@ -58,10 +58,14 @@ export default function EditarProdutoPage() {
     priceType: 'unique' as 'unique' | 'variable',
     price: '',
     variations: [] as ProductVariation[],
-    images: [] as string[],
     active: true,
     order: '1',
   });
+
+  // Estado para armazenar arquivos de imagem selecionados
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  // Estado para armazenar URLs das imagens já salvas (para preview)
+  const [savedImageUrls, setSavedImageUrls] = useState<string[]>([]);
 
   const [errors, setErrors] = useState<{
     categoryId?: string;
@@ -111,10 +115,12 @@ export default function EditarProdutoPage() {
         priceType: product.priceType,
         price: product.price ? String(product.price) : '',
         variations: product.variations || [],
-        images: product.images || [],
         active: product.active,
         order: String(product.order || 1),
       });
+      // Carregar URLs das imagens já salvas para preview
+      console.log("product.images: ", product.images)
+      setSavedImageUrls(product.images || []);
     }
   }, [product]);
 
@@ -195,7 +201,7 @@ export default function EditarProdutoPage() {
         description: formData.description.trim(),
         priceType: formData.priceType,
         active: formData.active,
-        images: formData.images,
+        images: savedImageUrls, // Manter URLs das imagens já salvas
         order: selectedOrder,
       };
 
@@ -208,6 +214,21 @@ export default function EditarProdutoPage() {
       }
 
       await updateProduct(id, productData);
+
+      // Fazer upload das novas imagens se houver arquivos selecionados
+      if (imageFiles.length > 0) {
+        try {
+          const { productsService } = await import('@/lib/api/productsService');
+          
+          // Upload de cada nova imagem
+          for (const file of imageFiles) {
+            await productsService.uploadImage(id, file);
+          }
+        } catch (uploadError) {
+          console.error('Erro ao fazer upload das imagens:', uploadError);
+          alert('Produto atualizado, mas houve erro ao fazer upload das novas imagens. Você pode tentar novamente depois.');
+        }
+      }
 
       // Recarregar produtos para garantir sincronização
       await loadProducts();
@@ -408,10 +429,9 @@ export default function EditarProdutoPage() {
                 Imagens do Produto
               </label>
               <ImageUpload
-                images={formData.images}
-                onImagesChange={(images) =>
-                  setFormData((prev) => ({ ...prev, images }))
-                }
+                images={savedImageUrls}
+                onFilesChange={(files) => setImageFiles(files)}
+                onImagesChange={(images) => setSavedImageUrls(images)}
                 maxImages={10}
               />
             </div>

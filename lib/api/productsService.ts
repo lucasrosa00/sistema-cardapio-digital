@@ -69,5 +69,16 @@ export const productsService = {
     const response = await api.delete<boolean>(`/api/Products/${id}`);
     return response.data;
   },
+
+  /**
+   * Faz upload de uma imagem para um produto
+   */
+  async uploadImage(productId: number, file: File): Promise<ProductDto> {
+    const response = await api.uploadFile<ProductDto>(
+      `/api/Products/${productId}/images/file`,
+      file
+    );
+    return response.data;
+  },
 };
 

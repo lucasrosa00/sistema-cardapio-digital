@@ -60,11 +60,15 @@ export default function CadastrarProdutoPage() {
       priceType: 'unique' as 'unique' | 'variable',
       price: '',
       variations: [] as ProductVariation[],
-      images: [] as string[],
       active: true,
       order: String(calculatedMaxOrder + 1),
     };
   });
+
+  // Estado para armazenar arquivos de imagem selecionados
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  // Estado para armazenar URLs das imagens já salvas (para preview)
+  const [savedImageUrls, setSavedImageUrls] = useState<string[]>([]);
 
   const [errors, setErrors] = useState<{
     categoryId?: string;
@@ -181,7 +185,7 @@ export default function CadastrarProdutoPage() {
         description: formData.description.trim(),
         priceType: formData.priceType,
         active: formData.active,
-        images: formData.images,
+        images: [], // Não enviar mais base64, será feito upload separado
         order: selectedOrder,
       };
 
@@ -196,8 +200,24 @@ export default function CadastrarProdutoPage() {
         router.push('/login');
         return;
       }
-      console.log("productData: ", productData)
-      await addProduct(productData, restaurantId);
+
+      // Criar produto primeiro
+      const createdProduct = await addProduct(productData, restaurantId);
+
+      // Fazer upload das imagens se houver arquivos selecionados
+      if (imageFiles.length > 0 && createdProduct?.id) {
+        try {
+          const { productsService } = await import('@/lib/api/productsService');
+          
+          // Upload de cada imagem
+          for (const file of imageFiles) {
+            await productsService.uploadImage(createdProduct.id, file);
+          }
+        } catch (uploadError) {
+          console.error('Erro ao fazer upload das imagens:', uploadError);
+          alert('Produto criado, mas houve erro ao fazer upload das imagens. Você pode editar o produto depois para adicionar as imagens.');
+        }
+      }
 
       // Recarregar produtos para garantir sincronização
       await loadProducts();
@@ -377,10 +397,9 @@ export default function CadastrarProdutoPage() {
                 Imagens do Produto
               </label>
               <ImageUpload
-                images={formData.images}
-                onImagesChange={(images) =>
-                  setFormData((prev) => ({ ...prev, images }))
-                }
+                images={savedImageUrls}
+                onFilesChange={(files) => setImageFiles(files)}
+                onImagesChange={(images) => setSavedImageUrls(images)}
                 maxImages={10}
               />
             </div>

@@ -30,7 +30,7 @@ export interface Product {
   priceType: 'unique' | 'variable';
   price?: number;
   variations?: ProductVariation[];
-  images?: string[]; // base64 strings
+  images?: string[];
   active: boolean;
   order: number;
 }

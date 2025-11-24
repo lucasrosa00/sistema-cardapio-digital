@@ -28,7 +28,7 @@ interface ProductsState {
   isLoading: boolean;
   setFilterActive: (value: boolean | null) => void;
   loadProducts: () => Promise<void>;
-  addProduct: (product: Omit<Product, 'id'>, restaurantId: number) => Promise<void>;
+  addProduct: (product: Omit<Product, 'id'>, restaurantId: number) => Promise<Product>;
   updateProduct: (id: number, product: Partial<Product>) => Promise<void>;
   deleteProduct: (id: number) => Promise<void>;
   getFilteredProducts: (restaurantId: number) => Product[];
@@ -83,7 +83,7 @@ export const useProductsStore = create<ProductsState>()((set, get) => ({
         title: product.title,
         description: product.description,
         priceType: product.priceType,
-        images: product.images || [],
+        images: [], // Não enviar mais base64, será feito upload separado
         active: product.active,
         order: newOrder,
       };
@@ -126,6 +126,8 @@ export const useProductsStore = create<ProductsState>()((set, get) => ({
           ],
         };
       });
+
+      return newProduct;
     } catch (error) {
       console.error('Erro ao criar produto:', error);
       throw error;

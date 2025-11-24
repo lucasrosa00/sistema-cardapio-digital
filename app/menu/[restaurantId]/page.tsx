@@ -131,6 +131,7 @@ export default function CardapioPublicoPage() {
       setError(null);
       try {
         const menuData = await restaurantService.getPublicMenu(slug);
+        console.log("menuData: ", menuData)
         setMenu(menuData);
 
         // Verificar se há categoria na URL (query parameter)
