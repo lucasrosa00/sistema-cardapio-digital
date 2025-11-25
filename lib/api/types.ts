@@ -168,6 +168,12 @@ export interface PublicMenuDto {
   categories: CategoryWithProductsDto[] | null;
 }
 
+// ========== TABLE MENU ==========
+export interface TableMenuDto {
+  tableNumber: string;
+  menu: PublicMenuDto;
+}
+
 // ========== TABLES ==========
 export interface TableDto {
   id: number;
@@ -188,5 +194,31 @@ export interface CreateTableDto {
 export interface UpdateTableDto {
   number?: string;
   active?: boolean;
+}
+
+// ========== ORDERS ==========
+export interface OrderItemDto {
+  productId: number;
+  quantity: number;
+  observations?: string;
+  selectedVariation?: string;
+}
+
+export interface CreateOrderDto {
+  tableId: number;
+  customerName?: string;
+  observations?: string;
+  items: OrderItemDto[];
+}
+
+export interface OrderDto {
+  id: number;
+  tableId: number;
+  customerName?: string;
+  observations?: string;
+  items: OrderItemDto[];
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 

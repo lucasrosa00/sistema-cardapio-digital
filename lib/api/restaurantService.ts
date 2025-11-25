@@ -4,6 +4,7 @@ import type {
   RestaurantConfigDto,
   UpdateRestaurantConfigDto,
   PublicMenuDto,
+  TableMenuDto,
 } from './types';
 
 export const restaurantService = {
@@ -33,6 +34,14 @@ export const restaurantService = {
    */
   async getPublicMenu(slug: string): Promise<PublicMenuDto> {
     const response = await api.get<PublicMenuDto>(`/api/public/menu/${slug}`);
+    return response.data;
+  },
+
+  /**
+   * Obtém o menu público por slug e número da mesa
+   */
+  async getTableMenu(slug: string, tableNumber: string): Promise<TableMenuDto> {
+    const response = await api.get<TableMenuDto>(`/api/public/table/${slug}/${tableNumber}`);
     return response.data;
   },
 };

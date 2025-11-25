@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { restaurantService } from '@/lib/api/restaurantService';
 import type { PublicMenuDto, CategoryWithProductsDto, SubcategoryWithProductsDto, ProductDto } from '@/lib/api/types';
+import { useCartStore } from '@/store/cartStore';
 import { CategoryTabs } from '@/components/cardapio/CategoryTabs';
 import { SubcategoryList } from '@/components/cardapio/SubcategoryList';
 import { ProductList } from '@/components/cardapio/ProductList';
 import { MenuHeader } from '@/components/cardapio/MenuHeader';
+import { ShoppingCart } from '@/components/cardapio/ShoppingCart';
 import { Spinner } from '@/components/ui/Spinner';
 
 // Tipos locais para compatibilidade com componentes
@@ -43,17 +45,42 @@ type Product = {
   order: number;
 };
 
-export default function CardapioPublicoPage() {
+interface CardapioPublicoPageProps {
+  menuData?: PublicMenuDto;
+  allowOrders?: boolean;
+  tableNumber?: string;
+}
+
+export default function CardapioPublicoPage({ 
+  menuData: initialMenuData, 
+  allowOrders: initialAllowOrders = false,
+  tableNumber: initialTableNumber 
+}: CardapioPublicoPageProps = {}) {
   const params = useParams();
   const searchParams = useSearchParams();
   const slug = params.restaurantId as string;
+  const tableNumberFromUrl = params.tableNumber as string | undefined;
 
-  const [menu, setMenu] = useState<PublicMenuDto | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [menu, setMenu] = useState<PublicMenuDto | null>(initialMenuData || null);
+  const [isLoading, setIsLoading] = useState(!initialMenuData);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<number | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [allowOrders, setAllowOrders] = useState(initialAllowOrders);
+  const [tableNumber, setTableNumber] = useState(initialTableNumber || tableNumberFromUrl || null);
+  
+  const setTableNumberInCart = useCartStore((state) => state.setTableNumber);
+  const setTableIdInCart = useCartStore((state) => state.setTableId);
+  
+  // Definir número da mesa no carrinho se fornecido
+  useEffect(() => {
+    if (tableNumber) {
+      setTableNumberInCart(tableNumber);
+      // Nota: tableId será buscado quando necessário no checkout
+      // pois a API de mesas pode requerer autenticação
+    }
+  }, [tableNumber, setTableNumberInCart]);
 
   // Converter dados da API para formato local
   const categories: Category[] = menu?.categories?.map(cat => ({
@@ -136,33 +163,61 @@ export default function CardapioPublicoPage() {
     mapUrl: null,
   };
 
-  // Carregar menu público
+  // Carregar menu público (apenas se não foi fornecido via props)
   useEffect(() => {
+    if (initialMenuData) {
+      // Menu já foi fornecido via props, não precisa carregar
+      setMenu(initialMenuData);
+      setIsLoading(false);
+      return;
+    }
+
     const loadMenu = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const menuData = await restaurantService.getPublicMenu(slug);
-        console.log("menuData: ", menuData)
-        setMenu(menuData);
+        let currentMenuData: PublicMenuDto;
+        
+        // Se há tableNumber na URL, tentar carregar menu da mesa
+        if (tableNumberFromUrl) {
+          try {
+            const tableMenuData = await restaurantService.getTableMenu(slug, tableNumberFromUrl);
+            currentMenuData = tableMenuData.menu;
+            setMenu(currentMenuData);
+            setAllowOrders(true);
+            setTableNumber(tableNumberFromUrl);
+          } catch (tableError) {
+            // Se falhar, carregar menu normal
+            console.warn('Erro ao carregar menu da mesa, carregando menu normal:', tableError);
+            currentMenuData = await restaurantService.getPublicMenu(slug);
+            setMenu(currentMenuData);
+            setAllowOrders(false);
+          }
+        } else {
+          // Carregar menu normal
+          currentMenuData = await restaurantService.getPublicMenu(slug);
+          console.log("menuData: ", currentMenuData)
+          setMenu(currentMenuData);
+          setAllowOrders(false);
+        }
 
         // Verificar se há categoria na URL (query parameter)
         const categoriaParam = searchParams.get('categoria');
         if (categoriaParam) {
           const categoriaId = Number(categoriaParam);
-          const categoryExists = menuData.categories?.some(cat => cat.category.id === categoriaId && cat.category.active);
+          const categoryExists = currentMenuData.categories?.some((cat: any) => cat.category.id === categoriaId && cat.category.active);
           if (categoryExists) {
             setSelectedCategoryId(categoriaId);
           } else {
             // Se a categoria não existe ou não está ativa, selecionar primeira categoria ativa
-            const firstActiveCategory = menuData.categories?.find(cat => cat.category.active);
+            const firstActiveCategory = currentMenuData.categories?.find((cat: any) => cat.category.active);
             if (firstActiveCategory) {
               setSelectedCategoryId(firstActiveCategory.category.id);
             }
           }
         } else {
           // Selecionar primeira categoria ativa por padrão
-          const firstActiveCategory = menuData.categories?.find(cat => cat.category.active);
+          const firstActiveCategory = currentMenuData.categories?.find((cat: any) => cat.category.active);
           if (firstActiveCategory) {
             setSelectedCategoryId(firstActiveCategory.category.id);
           }
@@ -178,7 +233,7 @@ export default function CardapioPublicoPage() {
     if (slug) {
       loadMenu();
     }
-  }, [slug, searchParams]);
+  }, [slug, searchParams, initialMenuData, tableNumberFromUrl]);
 
 
   // Resetar subcategoria selecionada quando categoria mudar
@@ -329,6 +384,7 @@ export default function CardapioPublicoPage() {
                 selectedCategoryId={selectedCategoryId}
                 mainColor={config.mainColor}
                 formatPrice={formatPrice}
+                allowOrders={allowOrders}
               />
             )}
 
@@ -350,6 +406,9 @@ export default function CardapioPublicoPage() {
           © {new Date().getFullYear()} {config.restaurantName || 'Cardápio Digital'}
         </p>
       </footer>
+
+      {/* Carrinho flutuante (apenas se pedidos estiverem habilitados) */}
+      {allowOrders && <ShoppingCart mainColor={config.mainColor} />}
 
       {/* Botão flutuante para voltar ao topo */}
       {showScrollTop && (

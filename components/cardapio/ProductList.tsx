@@ -1,9 +1,11 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Product, Subcategory } from '@/lib/mockData';
 import { ProductImageCarousel } from './ProductImageCarousel';
+import { VariationSelectionModal } from './VariationSelectionModal';
+import { useCartStore } from '@/store/cartStore';
 
 interface ProductListProps {
   products: Product[];
@@ -12,6 +14,7 @@ interface ProductListProps {
   selectedCategoryId: number | null;
   mainColor: string;
   formatPrice: (product: Product) => string;
+  allowOrders?: boolean;
 }
 
 export function ProductList({
@@ -21,11 +24,16 @@ export function ProductList({
   selectedCategoryId,
   mainColor,
   formatPrice,
+  allowOrders = false,
 }: ProductListProps) {
   const router = useRouter();
   const params = useParams();
   const restaurantId = params.restaurantId as string;
+  const tableNumberFromUrl = params.tableNumber as string | undefined;
+  const tableNumber = tableNumberFromUrl || null;
   const subcategoryRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const addItem = useCartStore((state) => state.addItem);
+  const [selectedProductForVariation, setSelectedProductForVariation] = useState<Product | null>(null);
 
   // Scroll para subcategoria selecionada
   useEffect(() => {
@@ -73,8 +81,9 @@ export function ProductList({
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-      {sortedSubcategoryIds.map((subcategoryId) => {
+    <>
+      <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+        {sortedSubcategoryIds.map((subcategoryId) => {
         const subcategory = subcategories.find((s) => s.id === subcategoryId);
         const subcategoryProducts = productsBySubcategory[subcategoryId];
         const isSelected = selectedSubcategoryId === subcategoryId;
@@ -111,6 +120,10 @@ export function ProductList({
                     if (selectedCategoryId) {
                       params.set('categoria', selectedCategoryId.toString());
                     }
+                    // Incluir mesa na URL se existir
+                    if (tableNumber) {
+                      params.set('mesa', tableNumber);
+                    }
                     router.push(`${url}${params.toString() ? `?${params.toString()}` : ''}`);
                   }}
                   className="rounded-lg overflow-hidden transition-all bg-white border border-gray-200 cursor-pointer hover:shadow-lg hover:border-gray-300"
@@ -141,41 +154,76 @@ export function ProductList({
                   {/* Preço ou Variações - Ocupa 100% da largura */}
                   <div className="px-4 pb-4 w-full border-t border-gray-100">
                     {product.priceType === 'unique' ? (
-                      <div
-                        className="text-xl font-bold pt-4"
-                        style={{ color: mainColor }}
-                      >
-                        {formatPrice(product)}
-                      </div>
-                    ) : (
-                      <div className="space-y-2 pt-4">
-                        <p
-                          className="text-sm font-medium"
+                      <div className="flex justify-between items-center pt-4">
+                        <div
+                          className="text-xl font-bold"
                           style={{ color: mainColor }}
                         >
-                          Opções disponíveis:
-                        </p>
-                        <div className="space-y-1">
-                          {product.variations?.map((variation, idx) => (
-                            <div
-                              key={idx}
-                              className="flex justify-between items-center"
-                            >
-                              <span className="text-sm text-gray-700">
-                                {variation.label}
-                              </span>
-                              <span
-                                className="font-semibold"
-                                style={{ color: mainColor }}
-                              >
-                                R${' '}
-                                {variation.price
-                                  .toFixed(2)
-                                  .replace('.', ',')}
-                              </span>
-                            </div>
-                          ))}
+                          {formatPrice(product)}
                         </div>
+                        {allowOrders && product.price && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addItem({
+                                productId: product.id,
+                                productTitle: product.title,
+                                price: product.price!,
+                                image: product.images?.[0],
+                              });
+                            }}
+                            className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
+                            style={{ backgroundColor: mainColor }}
+                          >
+                            Adicionar
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="pt-4">
+                        <div className="space-y-2 mb-4">
+                          <p
+                            className="text-sm font-medium"
+                            style={{ color: mainColor }}
+                          >
+                            Opções disponíveis:
+                          </p>
+                          <div className="space-y-1">
+                            {product.variations?.map((variation, idx) => (
+                              <div
+                                key={idx}
+                                className="flex justify-between items-center"
+                              >
+                                <span className="text-sm text-gray-700">
+                                  {variation.label}
+                                </span>
+                                <span
+                                  className="font-semibold"
+                                  style={{ color: mainColor }}
+                                >
+                                  R${' '}
+                                  {variation.price
+                                    .toFixed(2)
+                                    .replace('.', ',')}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {allowOrders && (
+                          <div className="flex justify-end">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProductForVariation(product);
+                              }}
+                              className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
+                              style={{ backgroundColor: mainColor }}
+                            >
+                              Adicionar
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -184,8 +232,29 @@ export function ProductList({
             </div>
           </div>
         );
-      })}
-    </div>
+        })}
+      </div>
+      {/* Modal de seleção de variação */}
+      {selectedProductForVariation && selectedProductForVariation.variations && (
+        <VariationSelectionModal
+          isOpen={!!selectedProductForVariation}
+          onClose={() => setSelectedProductForVariation(null)}
+          productTitle={selectedProductForVariation.title}
+          variations={selectedProductForVariation.variations}
+          mainColor={mainColor}
+          onSelectVariation={(variation) => {
+            addItem({
+              productId: selectedProductForVariation.id,
+              productTitle: selectedProductForVariation.title,
+              price: variation.price,
+              variationLabel: variation.label,
+              image: selectedProductForVariation.images?.[0],
+            });
+            setSelectedProductForVariation(null);
+          }}
+        />
+      )}
+    </>
   );
 }
 

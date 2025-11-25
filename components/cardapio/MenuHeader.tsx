@@ -2,6 +2,7 @@
 
 import { useRouter, useParams } from 'next/navigation';
 import { useState } from 'react';
+import { useCartStore } from '@/store/cartStore';
 import { PaymentMethodsModal } from './PaymentMethodsModal';
 
 interface MenuHeaderProps {
@@ -36,8 +37,15 @@ export function MenuHeader({
   const router = useRouter();
   const params = useParams();
   const slug = params?.restaurantId as string;
+  const tableNumberFromParams = params?.tableNumber as string | undefined;
+  const tableNumberFromCart = useCartStore((state) => state.tableNumber);
+  const tableNumber = tableNumberFromParams || tableNumberFromCart || null;
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
+  
+  const getSobreUrl = () => {
+    return tableNumber ? `/menu/${slug}/sobre?mesa=${tableNumber}` : `/menu/${slug}/sobre`;
+  };
 
   const handleCopyLink = async () => {
     const url = `https://pinktech.com.br/menu/${slug}`;
@@ -135,7 +143,7 @@ export function MenuHeader({
                 )}
                 {(address || about || openingHours || mapUrl) && (
                   <button
-                    onClick={() => router.push(`/menu/${slug}/sobre`)}
+                    onClick={() => router.push(getSobreUrl())}
                     className="p-1.5 rounded-lg transition-colors hover:bg-gray-100 text-gray-600 hover:text-gray-900 active:bg-gray-200"
                     title="Informações do Restaurante"
                     aria-label="Ver informações do restaurante"

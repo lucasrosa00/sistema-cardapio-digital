@@ -4,9 +4,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { restaurantService } from '@/lib/api/restaurantService';
 import type { PublicMenuDto } from '@/lib/api/types';
+import { useCartStore } from '@/store/cartStore';
 import { ProductImageCarousel } from '@/components/cardapio/ProductImageCarousel';
 import { MenuHeader } from '@/components/cardapio/MenuHeader';
+import { ShoppingCart } from '@/components/cardapio/ShoppingCart';
 import { Spinner } from '@/components/ui/Spinner';
+import { Button } from '@/components/ui/Button';
 
 type Product = {
   id: number;
@@ -29,11 +32,19 @@ export default function ProdutoDetalhesPage() {
   const searchParams = useSearchParams();
   const slug = params.restaurantId as string;
   const productId = Number(params.productId);
+  const tableNumberFromParams = params.tableNumber as string | undefined;
+  const tableNumberFromQuery = searchParams.get('mesa');
+  // Prioridade: URL params > Query param (apenas da URL, não do carrinho)
+  const tableNumber = tableNumberFromParams || tableNumberFromQuery || null;
 
   const [menu, setMenu] = useState<PublicMenuDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
+  const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
+  const [allowOrders, setAllowOrders] = useState(false);
+  
+  const addItem = useCartStore((state) => state.addItem);
 
   // Carregar menu e encontrar produto
   useEffect(() => {
@@ -41,8 +52,29 @@ export default function ProdutoDetalhesPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const menuData = await restaurantService.getPublicMenu(slug);
+        // Se há mesa, tentar carregar menu da mesa primeiro para validar se está ativa
+        let menuData: PublicMenuDto;
+        let canOrder = false;
+        
+        if (tableNumber) {
+          try {
+            // Tentar carregar menu da mesa - se funcionar, a mesa está ativa
+            const tableMenuData = await restaurantService.getTableMenu(slug, tableNumber);
+            menuData = tableMenuData.menu;
+            canOrder = true; // Se conseguiu carregar, a mesa está ativa e permite pedidos
+          } catch {
+            // Se falhar, mesa não está ativa ou não existe - carregar menu normal sem pedidos
+            menuData = await restaurantService.getPublicMenu(slug);
+            canOrder = false;
+          }
+        } else {
+          // Sem mesa na URL ou no carrinho - carregar menu normal sem pedidos
+          menuData = await restaurantService.getPublicMenu(slug);
+          canOrder = false;
+        }
+        
         setMenu(menuData);
+        setAllowOrders(canOrder);
 
         // Buscar produto em todas as categorias
         let foundProduct: Product | null = null;
@@ -107,7 +139,7 @@ export default function ProdutoDetalhesPage() {
     if (slug && productId) {
       loadMenu();
     }
-  }, [slug, productId]);
+  }, [slug, productId, tableNumber]);
 
   const config = menu?.restaurant ? {
     restaurantName: menu.restaurant.restaurantName || 'Cardápio Digital',
@@ -160,9 +192,10 @@ export default function ProdutoDetalhesPage() {
           <button
             onClick={() => {
               const categoriaParam = searchParams.get('categoria');
+              let baseUrl = tableNumber ? `/menu/${slug}/${tableNumber}` : `/menu/${slug}`;
               const url = categoriaParam 
-                ? `/menu/${slug}?categoria=${categoriaParam}`
-                : `/menu/${slug}`;
+                ? `${baseUrl}?categoria=${categoriaParam}`
+                : baseUrl;
               router.push(url);
             }}
             className="px-6 py-2 rounded-lg font-medium transition-colors"
@@ -188,9 +221,10 @@ export default function ProdutoDetalhesPage() {
         showBackButton={true}
         backUrl={(() => {
           const categoriaParam = searchParams.get('categoria');
+          let baseUrl = tableNumber ? `/menu/${slug}/${tableNumber}` : `/menu/${slug}`;
           return categoriaParam 
-            ? `/menu/${slug}?categoria=${categoriaParam}`
-            : `/menu/${slug}`;
+            ? `${baseUrl}?categoria=${categoriaParam}`
+            : baseUrl;
         })()}
         zIndex={30}
         paymentMethods={config.paymentMethods}
@@ -231,10 +265,27 @@ export default function ProdutoDetalhesPage() {
               {/* Preço ou Variações */}
               <div className="border-t border-gray-200 pt-4">
                 {product.priceType === 'unique' ? (
-                  <div className="flex items-center gap-4">
+                  <div className="space-y-3">
                     <span className="text-xl md:text-2xl font-bold" style={{ color: config.mainColor }}>
                       {formatPrice(product.price || 0)}
                     </span>
+                    {allowOrders && (
+                      <Button
+                        onClick={() => {
+                          addItem({
+                            productId: product.id,
+                            productTitle: product.title,
+                            price: product.price!,
+                            image: product.images?.[0],
+                          });
+                        }}
+                        variant="primary"
+                        className="w-full py-3 mt-4"
+                        style={{ backgroundColor: config.mainColor }}
+                      >
+                        Adicionar
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -248,7 +299,12 @@ export default function ProdutoDetalhesPage() {
                       {product.variations?.map((variation, idx) => (
                         <div
                           key={idx}
-                          className="flex justify-between items-center p-3 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                          onClick={() => allowOrders ? setSelectedVariation(variation.label) : undefined}
+                          className={`flex justify-between items-center p-3 rounded-lg border transition-colors cursor-pointer ${
+                            selectedVariation === variation.label
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
                         >
                           <span className="text-sm md:text-base text-gray-900 font-medium">
                             {variation.label}
@@ -262,6 +318,33 @@ export default function ProdutoDetalhesPage() {
                         </div>
                       ))}
                     </div>
+                    {allowOrders && (
+                      <Button
+                        onClick={() => {
+                          if (!selectedVariation) {
+                            alert('Por favor, selecione uma opção antes de adicionar o item ao pedido.');
+                            return;
+                          }
+                          const variation = product.variations?.find(v => v.label === selectedVariation);
+                          if (variation) {
+                            addItem({
+                              productId: product.id,
+                              productTitle: product.title,
+                              price: variation.price,
+                              variationLabel: variation.label,
+                              image: product.images?.[0],
+                            });
+                            setSelectedVariation(null);
+                          }
+                        }}
+                        variant="primary"
+                        disabled={!selectedVariation}
+                        className="w-full py-3 mt-4"
+                        style={{ backgroundColor: config.mainColor }}
+                      >
+                        {selectedVariation ? 'Adicionar' : 'Selecione uma opção'}
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -276,6 +359,9 @@ export default function ProdutoDetalhesPage() {
           © {new Date().getFullYear()} {config.restaurantName || 'Cardápio Digital'}
         </p>
       </footer>
+
+      {/* Carrinho flutuante (apenas se pedidos estiverem habilitados) */}
+      {allowOrders && <ShoppingCart mainColor={config.mainColor} />}
     </div>
   );
 }

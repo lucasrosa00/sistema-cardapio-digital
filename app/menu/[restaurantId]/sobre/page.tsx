@@ -1,16 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { restaurantService } from '@/lib/api/restaurantService';
 import type { PublicMenuDto } from '@/lib/api/types';
+import { useCartStore } from '@/store/cartStore';
 import { getImageUrl } from '@/lib/utils/imageUrl';
 import { Spinner } from '@/components/ui/Spinner';
 
 export default function SobreRestaurantePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const slug = params.restaurantId as string;
+  const tableNumberFromParams = params.tableNumber as string | undefined;
+  const tableNumberFromQuery = searchParams.get('mesa');
+  const tableNumberFromCart = useCartStore((state) => state.tableNumber);
+  const tableNumber = tableNumberFromParams || tableNumberFromQuery || tableNumberFromCart || null;
+  
+  const getBackUrl = () => {
+    return tableNumber ? `/menu/${slug}/${tableNumber}` : `/menu/${slug}`;
+  };
 
   const [menu, setMenu] = useState<PublicMenuDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +62,7 @@ export default function SobreRestaurantePage() {
             Restaurante não encontrado
           </h1>
           <button
-            onClick={() => router.push(`/menu/${slug}`)}
+            onClick={() => router.push(getBackUrl())}
             className="px-6 py-2 rounded-lg font-medium transition-colors bg-blue-500 text-white hover:bg-blue-600"
           >
             Voltar ao Cardápio
@@ -98,7 +108,7 @@ export default function SobreRestaurantePage() {
           )}
         </div>
         <button
-          onClick={() => router.push(`/menu/${slug}`)}
+          onClick={() => router.push(getBackUrl())}
           className="absolute top-4 left-4 text-white hover:text-gray-200 transition-colors bg-black bg-opacity-50 rounded-full p-2"
         >
           <svg
