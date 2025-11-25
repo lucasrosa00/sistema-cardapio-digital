@@ -211,6 +211,41 @@ export interface CreateOrderDto {
   items: OrderItemDto[];
 }
 
+// Item do pedido retornado pela API
+export interface OrderItemResponseDto {
+  id: number;
+  productId: number;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  observations?: string | null;
+  selectedVariation?: string | null;
+  createdAt: string;
+}
+
+// Pedido completo retornado pela API
+export interface OrderResponseDto {
+  id: number;
+  restaurantId: number;
+  tableId: number;
+  tableNumber: string;
+  status: string;
+  total: number;
+  customerName?: string | null;
+  observations?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  confirmedAt?: string | null;
+  deliveredAt?: string | null;
+  items: OrderItemResponseDto[];
+}
+
+export interface UpdateOrderStatusDto {
+  status: string;
+}
+
+// Mantido para compatibilidade
 export interface OrderDto {
   id: number;
   tableId: number;
