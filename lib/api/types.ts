@@ -168,3 +168,25 @@ export interface PublicMenuDto {
   categories: CategoryWithProductsDto[] | null;
 }
 
+// ========== TABLES ==========
+export interface TableDto {
+  id: number;
+  restaurantId: number;
+  number: string;
+  qrCode: string;
+  qrCodeUrl: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTableDto {
+  number: string;
+  active: boolean;
+}
+
+export interface UpdateTableDto {
+  number?: string;
+  active?: boolean;
+}
+

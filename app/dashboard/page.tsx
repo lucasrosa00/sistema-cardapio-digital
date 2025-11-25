@@ -13,8 +13,9 @@ export default function DashboardPage() {
   const loadConfig = useRestaurantConfigStore((state) => state.loadConfig);
   
   const [restaurantName, setRestaurantName] = useState<string | null>(restaurantNameFromAuth);
+  const [tableOrderEnabled, setTableOrderEnabled] = useState(false);
 
-  // Carregar nome do restaurante da API ao montar
+  // Carregar nome do restaurante e configurações da API ao montar
   useEffect(() => {
     if (restaurantId) {
       loadConfig(restaurantId)
@@ -23,14 +24,17 @@ export default function DashboardPage() {
           // Prioriza o nome da API, se não tiver usa o do authStore
           if (config) {
             setRestaurantName(config.restaurantName || restaurantNameFromAuth || 'Restaurante');
+            setTableOrderEnabled(config.tableOrderEnabled);
           } else {
             setRestaurantName(restaurantNameFromAuth || 'Restaurante');
+            setTableOrderEnabled(false);
           }
         })
         .catch((error) => {
           console.error('Erro ao carregar configuração:', error);
           // Em caso de erro, usa o nome do authStore
           setRestaurantName(restaurantNameFromAuth || 'Restaurante');
+          setTableOrderEnabled(false);
         });
     }
   }, [restaurantId, restaurantNameFromAuth, loadConfig, getConfig]);
@@ -69,7 +73,7 @@ export default function DashboardPage() {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Gerenciamento
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className={`grid grid-cols-1 gap-4 mb-6 ${tableOrderEnabled ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
               <button
                 onClick={() => router.push('/dashboard/categorias')}
                 className="bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-blue-500 hover:shadow-md transition-all text-left"
@@ -103,6 +107,19 @@ export default function DashboardPage() {
                   Cadastre e gerencie os produtos do cardápio
                 </p>
               </button>
+              {tableOrderEnabled && (
+                <button
+                  onClick={() => router.push('/dashboard/mesas')}
+                  className="bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-blue-500 hover:shadow-md transition-all text-left"
+                >
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Mesas
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Gerencie as mesas do restaurante
+                  </p>
+                </button>
+              )}
             </div>
           </div>
 
