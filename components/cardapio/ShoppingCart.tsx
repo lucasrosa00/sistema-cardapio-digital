@@ -17,6 +17,7 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
   const [observations, setObservations] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerNameError, setCustomerNameError] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const { items, removeItem, updateQuantity, getTotal, getItemCount, clearCart, tableNumber, tableId } = useCartStore();
 
   const itemCount = getItemCount();
@@ -93,7 +94,7 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
       setIsOpen(false);
       setCustomerName('');
       setObservations('');
-      alert('Pedido realizado com sucesso!');
+      setShowSuccessModal(true);
     } catch (error: any) {
       console.error('Erro ao realizar pedido:', error);
       const errorMessage = error?.message || 'Erro ao realizar pedido. Tente novamente.';
@@ -313,6 +314,59 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de sucesso */}
+      {showSuccessModal && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50"
+          onClick={() => setShowSuccessModal(false)}
+        >
+          <div
+            className="min-h-screen px-4 py-8 flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 text-center">
+              {/* Ícone de sucesso */}
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4" style={{ backgroundColor: `${mainColor}20` }}>
+                <svg
+                  className="h-10 w-10"
+                  style={{ color: mainColor }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+
+              {/* Título */}
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Pedido Enviado!
+              </h2>
+
+              {/* Mensagem */}
+              <p className="text-gray-600 mb-6">
+                Seu pedido foi recebido com sucesso. Nossa equipe já está preparando e em breve será servido na sua mesa.
+              </p>
+
+              {/* Botão de fechar */}
+              <Button
+                variant="primary"
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full"
+                style={{ backgroundColor: mainColor }}
+              >
+                Entendi
+              </Button>
             </div>
           </div>
         </div>
