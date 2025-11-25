@@ -16,6 +16,7 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
   const [customerName, setCustomerName] = useState('');
   const [observations, setObservations] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customerNameError, setCustomerNameError] = useState('');
   const { items, removeItem, updateQuantity, getTotal, getItemCount, clearCart, tableNumber, tableId } = useCartStore();
 
   const itemCount = getItemCount();
@@ -37,9 +38,12 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
     }
 
     if (!customerName.trim()) {
-      alert('Por favor, informe o nome do cliente.');
+      setCustomerNameError('Por favor, informe o nome do cliente.');
       return;
     }
+    
+    // Limpar erro se o nome estiver preenchido
+    setCustomerNameError('');
 
     setIsSubmitting(true);
     try {
@@ -256,10 +260,19 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
                       name="customerName"
                       type="text"
                       value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
+                      onChange={(e) => {
+                        setCustomerName(e.target.value);
+                        // Limpar erro quando o usuário começar a digitar
+                        if (customerNameError) {
+                          setCustomerNameError('');
+                        }
+                      }}
                       placeholder="Seu nome"
                       required
                     />
+                    {customerNameError && (
+                      <p className="mt-1 text-sm text-red-600">{customerNameError}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
