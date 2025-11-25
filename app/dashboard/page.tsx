@@ -71,9 +71,9 @@ export default function DashboardPage() {
 
           <div className="mt-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Gerenciamento
+              Gerenciamento do Cardápio
             </h2>
-            <div className={`grid grid-cols-1 gap-4 mb-6 ${tableOrderEnabled ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <button
                 onClick={() => router.push('/dashboard/categorias')}
                 className="bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-blue-500 hover:shadow-md transition-all text-left"
@@ -107,7 +107,15 @@ export default function DashboardPage() {
                   Cadastre e gerencie os produtos do cardápio
                 </p>
               </button>
-              {tableOrderEnabled && (
+            </div>
+          </div>
+
+          {tableOrderEnabled && (
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Gerenciamento de Mesas e Pedidos
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <button
                   onClick={() => router.push('/dashboard/mesas')}
                   className="bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-blue-500 hover:shadow-md transition-all text-left"
@@ -119,25 +127,38 @@ export default function DashboardPage() {
                     Gerencie as mesas do restaurante
                   </p>
                 </button>
-              )}
+                <button
+                  onClick={() => router.push('/dashboard/pedidos')}
+                  className="bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-blue-500 hover:shadow-md transition-all text-left"
+                >
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Pedidos
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Visualize e gerencie os pedidos recebidos
+                  </p>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="mt-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Configurações
             </h2>
-            <button
-              onClick={() => router.push('/dashboard/configuracoes')}
-              className="bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-blue-500 hover:shadow-md transition-all text-left w-full"
-            >
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Identidade Visual
-              </h3>
-              <p className="text-sm text-gray-600">
-                Configure o nome, logo, cores e tema do seu cardápio
-              </p>
-            </button>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <button
+                onClick={() => router.push('/dashboard/configuracoes')}
+                className="bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-blue-500 hover:shadow-md transition-all text-left"
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Identidade Visual
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Configure o nome, logo, cores e tema do seu cardápio
+                </p>
+              </button>
+            </div>
           </div>
         </div>
       </div>
