@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { ImageUpload } from '@/components/ui/ImageUpload';
+import { Switch } from '@/components/ui/Switch';
 
 export default function ConfiguracoesPage() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function ConfiguracoesPage() {
     mainColor: '#ff0000',
     logo: null as string | null,
     backgroundImage: null as string | null,
+    tableOrderEnabled: false,
     paymentMethods: '',
     address: '',
     openingHours: '',
@@ -44,6 +46,7 @@ export default function ConfiguracoesPage() {
             mainColor: config.mainColor,
             logo: config.logo,
             backgroundImage: config.backgroundImage,
+            tableOrderEnabled: config.tableOrderEnabled,
             paymentMethods: config.paymentMethods || '',
             address: config.address || '',
             openingHours: config.openingHours || '',
@@ -56,6 +59,7 @@ export default function ConfiguracoesPage() {
             mainColor: '#ff0000',
             logo: null,
             backgroundImage: null,
+            tableOrderEnabled: false,
             paymentMethods: '',
             address: '',
             openingHours: '',
@@ -70,6 +74,7 @@ export default function ConfiguracoesPage() {
           mainColor: '#ff0000',
           logo: null,
           backgroundImage: null,
+          tableOrderEnabled: false,
           paymentMethods: '',
           address: '',
           openingHours: '',
@@ -106,6 +111,7 @@ export default function ConfiguracoesPage() {
         mainColor: formData.mainColor,
         logo: formData.logo,
         backgroundImage: formData.backgroundImage,
+        tableOrderEnabled: formData.tableOrderEnabled,
         paymentMethods: formData.paymentMethods.trim() || null,
         address: formData.address.trim() || null,
         openingHours: formData.openingHours.trim() || null,
@@ -121,6 +127,7 @@ export default function ConfiguracoesPage() {
           mainColor: updatedConfig.mainColor,
           logo: updatedConfig.logo,
           backgroundImage: updatedConfig.backgroundImage,
+          tableOrderEnabled: updatedConfig.tableOrderEnabled,
           paymentMethods: updatedConfig.paymentMethods || '',
           address: updatedConfig.address || '',
           openingHours: updatedConfig.openingHours || '',
@@ -149,17 +156,30 @@ export default function ConfiguracoesPage() {
     }
   };
 
-  const handleLogoChange = (images: string[]) => {
-    setFormData((prev) => ({
-      ...prev,
-      logo: images.length > 0 ? images[0] : null,
-    }));
-  };
-
-  const handleLogoUpload = (images: string[]) => {
-    if (images.length > 0) {
-      handleLogoChange(images);
+  const handleLogoFilesChange = async (files: File[]) => {
+    if (files.length === 0) {
+      setFormData((prev) => ({ ...prev, logo: null }));
+      return;
     }
+
+    // Converter o primeiro arquivo para base64
+    const file = files[0];
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const base64String = e.target?.result as string;
+      setFormData((prev) => ({
+        ...prev,
+        logo: base64String,
+      }));
+    };
+
+    reader.onerror = () => {
+      console.error('Erro ao converter arquivo para base64');
+      alert('Erro ao processar a imagem. Tente novamente.');
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const removeLogo = () => {
@@ -214,6 +234,20 @@ export default function ConfiguracoesPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
+                Pedidos pela Mesa
+              </label>
+              <Switch
+                label="Permitir realizar pedidos pela mesa"
+                checked={formData.tableOrderEnabled}
+                onChange={(checked) => setFormData((prev) => ({ ...prev, tableOrderEnabled: checked }))}
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Quando habilitado, os clientes poderão fazer pedidos diretamente pelo cardápio digital
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Logo do Restaurante
               </label>
               
@@ -240,8 +274,8 @@ export default function ConfiguracoesPage() {
               ) : (
                 <ImageUpload
                   images={[]}
-                  onFilesChange={() => {}}
-                  onImagesChange={handleLogoUpload}
+                  onFilesChange={handleLogoFilesChange}
+                  onImagesChange={() => {}}
                   maxImages={1}
                 />
               )}

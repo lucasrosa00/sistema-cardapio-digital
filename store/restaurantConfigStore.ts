@@ -7,6 +7,7 @@ export interface RestaurantConfig {
   mainColor: string;
   logo: string | null;
   backgroundImage: string | null;
+  tableOrderEnabled: boolean;
   paymentMethods: string | null;
   address: string | null;
   about: string | null;
@@ -20,6 +21,7 @@ const dtoToConfig = (dto: RestaurantConfigDto): RestaurantConfig => ({
   mainColor: dto.mainColor && dto.mainColor.trim() !== '' ? dto.mainColor : '#ff0000',
   logo: dto.logo && dto.logo.trim() !== '' ? dto.logo : null,
   backgroundImage: dto.backgroundImage && dto.backgroundImage.trim() !== '' ? dto.backgroundImage : null,
+  tableOrderEnabled: dto.tableOrderEnabled ?? false,
   paymentMethods: dto.paymentMethods && dto.paymentMethods.trim() !== '' ? dto.paymentMethods : null,
   address: dto.address && dto.address.trim() !== '' ? dto.address : null,
   about: dto.about && dto.about.trim() !== '' ? dto.about : null,
@@ -72,6 +74,7 @@ export const useRestaurantConfigStore = create<RestaurantConfigState>()((set, ge
         mainColor: updates.mainColor !== undefined ? updates.mainColor : undefined,
         logo: updates.logo !== undefined ? updates.logo : undefined,
         backgroundImage: updates.backgroundImage !== undefined ? updates.backgroundImage : undefined,
+        tableOrderEnabled: updates.tableOrderEnabled !== undefined ? updates.tableOrderEnabled : undefined,
         paymentMethods: updates.paymentMethods !== undefined ? updates.paymentMethods : undefined,
         address: updates.address !== undefined ? updates.address : undefined,
         about: updates.about !== undefined ? updates.about : undefined,
