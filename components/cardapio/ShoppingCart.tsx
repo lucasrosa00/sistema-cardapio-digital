@@ -201,14 +201,14 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variationLabel)}
-                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
+                            className="text-gray-700 w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                           >
                             -
                           </button>
-                          <span className="w-8 text-center font-medium">{item.quantity}</span>
+                          <span className="text-gray-700 w-8 text-center font-medium">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variationLabel)}
-                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
+                            className="text-gray-700 w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                           >
                             +
                           </button>
