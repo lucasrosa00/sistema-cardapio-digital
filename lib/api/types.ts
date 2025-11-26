@@ -170,6 +170,7 @@ export interface PublicMenuDto {
 
 // ========== TABLE MENU ==========
 export interface TableMenuDto {
+  tableId: number;
   tableNumber: string;
   menu: PublicMenuDto;
 }

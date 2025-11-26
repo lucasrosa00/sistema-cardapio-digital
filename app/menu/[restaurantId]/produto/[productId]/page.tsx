@@ -43,7 +43,7 @@ export default function ProdutoDetalhesPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
   const [allowOrders, setAllowOrders] = useState(false);
-  
+
   const addItem = useCartStore((state) => state.addItem);
 
   // Carregar menu e encontrar produto
@@ -55,13 +55,18 @@ export default function ProdutoDetalhesPage() {
         // Se há mesa, tentar carregar menu da mesa primeiro para validar se está ativa
         let menuData: PublicMenuDto;
         let canOrder = false;
-        
+
         if (tableNumber) {
           try {
             // Tentar carregar menu da mesa - se funcionar, a mesa está ativa
             const tableMenuData = await restaurantService.getTableMenu(slug, tableNumber);
             menuData = tableMenuData.menu;
             canOrder = true; // Se conseguiu carregar, a mesa está ativa e permite pedidos
+            // Salvar tableId no store quando o cardápio é carregado
+            if (tableMenuData.tableId) {
+              const { setTableId } = useCartStore.getState();
+              setTableId(tableMenuData.tableId);
+            }
           } catch {
             // Se falhar, mesa não está ativa ou não existe - carregar menu normal sem pedidos
             menuData = await restaurantService.getPublicMenu(slug);
@@ -72,13 +77,13 @@ export default function ProdutoDetalhesPage() {
           menuData = await restaurantService.getPublicMenu(slug);
           canOrder = false;
         }
-        
+
         setMenu(menuData);
         setAllowOrders(canOrder);
 
         // Buscar produto em todas as categorias
         let foundProduct: Product | null = null;
-        
+
         menuData.categories?.forEach(cat => {
           // Produtos das subcategorias
           cat.subcategories?.forEach(sub => {
@@ -146,6 +151,7 @@ export default function ProdutoDetalhesPage() {
     mainColor: menu.restaurant.mainColor || '#ff0000',
     logo: menu.restaurant.logo || null,
     backgroundImage: menu.restaurant.backgroundImage || null,
+    darkMode: menu.restaurant.darkMode || false,
     paymentMethods: menu.restaurant.paymentMethods || null,
     address: menu.restaurant.address || null,
     about: menu.restaurant.about || null,
@@ -156,6 +162,7 @@ export default function ProdutoDetalhesPage() {
     mainColor: '#ff0000',
     logo: null,
     backgroundImage: null,
+    darkMode: false,
     paymentMethods: null,
     address: null,
     about: null,
@@ -170,7 +177,10 @@ export default function ProdutoDetalhesPage() {
   // Loading
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div
+        className={`min-h-screen ${config.darkMode ? '' : 'bg-white'} flex items-center justify-center`}
+        style={config.darkMode ? { backgroundColor: '#1F1F1F' } : {}}
+      >
         <div className="text-center">
           <Spinner size="lg" color="#3b82f6" />
         </div>
@@ -181,25 +191,28 @@ export default function ProdutoDetalhesPage() {
   // Erro ou produto não encontrado
   if (error || !product) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div
+        className={`min-h-screen ${config.darkMode ? '' : 'bg-white'} flex items-center justify-center`}
+        style={config.darkMode ? { backgroundColor: '#1F1F1F' } : {}}
+      >
         <div className="text-center px-4">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className={`text-2xl font-bold mb-2 ${config.darkMode ? 'text-white' : 'text-gray-900'}`}>
             Produto não encontrado
           </h1>
-          <p className="text-gray-600 mb-6">
+          <p className={`mb-6 ${config.darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             O produto que você está procurando não está disponível.
           </p>
           <button
             onClick={() => {
               const categoriaParam = searchParams.get('categoria');
               let baseUrl = tableNumber ? `/menu/${slug}/${tableNumber}` : `/menu/${slug}`;
-              const url = categoriaParam 
+              const url = categoriaParam
                 ? `${baseUrl}?categoria=${categoriaParam}`
                 : baseUrl;
               router.push(url);
             }}
             className="px-6 py-2 rounded-lg font-medium transition-colors"
-            style={{ 
+            style={{
               backgroundColor: config.mainColor,
               color: '#ffffff'
             }}
@@ -212,9 +225,14 @@ export default function ProdutoDetalhesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div
+      className={`min-h-screen ${config.darkMode ? 'text-white' : 'bg-white text-gray-900'}`}
+      style={config.darkMode ? { backgroundColor: '#1F1F1F' } : {}}
+      data-dark-mode={config.darkMode ? 'true' : 'false'}
+    >
       {/* Cabeçalho */}
       <MenuHeader
+        darkMode={config.darkMode}
         restaurantName={config.restaurantName}
         mainColor={config.mainColor}
         logo={config.logo}
@@ -222,7 +240,7 @@ export default function ProdutoDetalhesPage() {
         backUrl={(() => {
           const categoriaParam = searchParams.get('categoria');
           let baseUrl = tableNumber ? `/menu/${slug}/${tableNumber}` : `/menu/${slug}`;
-          return categoriaParam 
+          return categoriaParam
             ? `${baseUrl}?categoria=${categoriaParam}`
             : baseUrl;
         })()}
@@ -237,7 +255,7 @@ export default function ProdutoDetalhesPage() {
 
       {/* Conteúdo */}
       <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className={`${config.darkMode ? 'bg-[#1F1F1F]' : 'bg-white'} rounded-lg shadow-lg overflow-hidden`}>
           <div className="flex flex-col md:flex-row">
             {/* Imagens do Produto */}
             {product.images && product.images.length > 0 && (
@@ -254,16 +272,16 @@ export default function ProdutoDetalhesPage() {
             {/* Informações do Produto */}
             <div className={`w-full ${product.images && product.images.length > 0 ? 'md:w-1/2' : ''} p-6 flex flex-col justify-between`}>
               <div>
-                <h2 className="text-xl md:text-2xl font-bold mb-3">
+                <h2 className={`text-xl md:text-2xl font-bold mb-3 ${config.darkMode ? 'text-white' : ''}`}>
                   {product.title}
                 </h2>
-                <p className="text-sm md:text-base text-gray-600 mb-6">
+                <p className={`text-sm md:text-base mb-6 ${config.darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   {product.description}
                 </p>
               </div>
 
               {/* Preço ou Variações */}
-              <div className="border-t border-gray-200 pt-4">
+              <div className={`border-t pt-4 ${config.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 {product.priceType === 'unique' ? (
                   <div className="space-y-3">
                     <span className="text-xl md:text-2xl font-bold" style={{ color: config.mainColor }}>
@@ -300,13 +318,14 @@ export default function ProdutoDetalhesPage() {
                         <div
                           key={idx}
                           onClick={() => allowOrders ? setSelectedVariation(variation.label) : undefined}
-                          className={`flex justify-between items-center p-3 rounded-lg border transition-colors cursor-pointer ${
-                            selectedVariation === variation.label
+                          className={`flex justify-between items-center p-3 rounded-lg border transition-colors cursor-pointer ${selectedVariation === variation.label
                               ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
+                              : config.darkMode
+                                ? 'border-gray-700 hover:border-gray-600'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
                         >
-                          <span className="text-sm md:text-base text-gray-900 font-medium">
+                          <span className={`text-sm md:text-base font-medium ${config.darkMode ? 'text-white' : 'text-gray-900'}`}>
                             {variation.label}
                           </span>
                           <span
@@ -354,7 +373,7 @@ export default function ProdutoDetalhesPage() {
       </main>
 
       {/* Rodapé */}
-      <footer className="py-6 text-center text-gray-600">
+      <footer className={`py-6 text-center ${config.darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
         <p className="text-sm">
           © {new Date().getFullYear()} {config.restaurantName || 'Cardápio Digital'}
         </p>

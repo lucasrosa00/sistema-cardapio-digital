@@ -24,6 +24,7 @@ export default function ConfiguracoesPage() {
     mainColor: '#ff0000',
     logo: null as string | null,
     backgroundImage: null as string | null,
+    darkMode: false,
     tableOrderEnabled: false,
     paymentMethods: '',
     address: '',
@@ -46,6 +47,7 @@ export default function ConfiguracoesPage() {
             mainColor: config.mainColor,
             logo: config.logo,
             backgroundImage: config.backgroundImage,
+            darkMode: config.darkMode ?? false,
             tableOrderEnabled: config.tableOrderEnabled,
             paymentMethods: config.paymentMethods || '',
             address: config.address || '',
@@ -59,6 +61,7 @@ export default function ConfiguracoesPage() {
             mainColor: '#ff0000',
             logo: null,
             backgroundImage: null,
+            darkMode: false,
             tableOrderEnabled: false,
             paymentMethods: '',
             address: '',
@@ -74,6 +77,7 @@ export default function ConfiguracoesPage() {
           mainColor: '#ff0000',
           logo: null,
           backgroundImage: null,
+          darkMode: false,
           tableOrderEnabled: false,
           paymentMethods: '',
           address: '',
@@ -111,6 +115,7 @@ export default function ConfiguracoesPage() {
         mainColor: formData.mainColor,
         logo: formData.logo,
         backgroundImage: formData.backgroundImage,
+        darkMode: formData.darkMode,
         tableOrderEnabled: formData.tableOrderEnabled,
         paymentMethods: formData.paymentMethods.trim() || null,
         address: formData.address.trim() || null,
@@ -127,6 +132,7 @@ export default function ConfiguracoesPage() {
           mainColor: updatedConfig.mainColor,
           logo: updatedConfig.logo,
           backgroundImage: updatedConfig.backgroundImage,
+          darkMode: updatedConfig.darkMode ?? false,
           tableOrderEnabled: updatedConfig.tableOrderEnabled,
           paymentMethods: updatedConfig.paymentMethods || '',
           address: updatedConfig.address || '',
@@ -231,6 +237,20 @@ export default function ConfiguracoesPage() {
               value={formData.mainColor}
               onChange={(value) => setFormData((prev) => ({ ...prev, mainColor: value }))}
             />
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Modo Escuro
+              </label>
+              <Switch
+                label="Ativar modo escuro no cardápio"
+                checked={formData.darkMode}
+                onChange={(checked) => setFormData((prev) => ({ ...prev, darkMode: checked }))}
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Quando habilitado, o cardápio será exibido com fundo escuro e texto claro
+              </p>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">

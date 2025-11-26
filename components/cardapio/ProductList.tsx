@@ -15,6 +15,7 @@ interface ProductListProps {
   mainColor: string;
   formatPrice: (product: Product) => string;
   allowOrders?: boolean;
+  darkMode?: boolean;
 }
 
 export function ProductList({
@@ -25,6 +26,7 @@ export function ProductList({
   mainColor,
   formatPrice,
   allowOrders = false,
+  darkMode = false,
 }: ProductListProps) {
   const router = useRouter();
   const params = useParams();
@@ -73,7 +75,7 @@ export function ProductList({
   if (sortedSubcategoryIds.length === 0) {
     return (
       <div className="text-center py-12 px-4 sm:px-6 lg:px-8">
-        <p className="text-gray-600">
+        <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
           Nenhum produto disponível.
         </p>
       </div>
@@ -84,154 +86,154 @@ export function ProductList({
     <>
       <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {sortedSubcategoryIds.map((subcategoryId) => {
-        const subcategory = subcategories.find((s) => s.id === subcategoryId);
-        const subcategoryProducts = productsBySubcategory[subcategoryId];
-        const isSelected = selectedSubcategoryId === subcategoryId;
+          const subcategory = subcategories.find((s) => s.id === subcategoryId);
+          const subcategoryProducts = productsBySubcategory[subcategoryId];
+          const isSelected = selectedSubcategoryId === subcategoryId;
 
-        return (
-          <div
-            key={subcategoryId}
-            ref={(el) => {
-              subcategoryRefs.current[subcategoryId] = el;
-            }}
-            className="scroll-mt-24"
-          >
-            {/* Título da Subcategoria */}
-            {subcategoryId !== 0 && (
-              <h3
-                className="text-xl md:text-2xl font-bold mb-4 pb-2 border-b-2"
-                style={{
-                  color: mainColor,
-                  borderColor: isSelected ? mainColor : '#e5e7eb',
-                }}
-              >
-                {subcategory?.title || 'Sem subcategoria'}
-              </h3>
-            )}
-
-            {/* Produtos da Subcategoria */}
-            <div className="space-y-6">
-              {subcategoryProducts.map((product) => (
-                <div
-                  key={product.id}
-                  onClick={() => {
-                    const url = `/menu/${restaurantId}/produto/${product.id}`;
-                    const params = new URLSearchParams();
-                    if (selectedCategoryId) {
-                      params.set('categoria', selectedCategoryId.toString());
-                    }
-                    // Incluir mesa na URL se existir
-                    if (tableNumber) {
-                      params.set('mesa', tableNumber);
-                    }
-                    router.push(`${url}${params.toString() ? `?${params.toString()}` : ''}`);
+          return (
+            <div
+              key={subcategoryId}
+              ref={(el) => {
+                subcategoryRefs.current[subcategoryId] = el;
+              }}
+              className="scroll-mt-24"
+            >
+              {/* Título da Subcategoria */}
+              {subcategoryId !== 0 && (
+                <h3
+                  className="text-xl md:text-2xl font-bold mb-4 pb-2 border-b-2"
+                  style={{
+                    color: mainColor,
+                    borderColor: isSelected ? mainColor : darkMode ? '#2F2F2F' : '#e5e7eb',
                   }}
-                  className="rounded-lg overflow-hidden transition-all bg-white border border-gray-200 cursor-pointer hover:shadow-lg hover:border-gray-300"
                 >
-                  {/* Conteúdo superior: Título/Descrição e Imagem */}
-                  <div className="flex flex-row">
-                    {/* Informações do Produto */}
-                    <div className="p-4 flex-1 flex flex-col">
-                      <h4 className="text-lg font-semibold mb-2">
-                        {product.title}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        {product.description}
-                      </p>
+                  {subcategory?.title || 'Sem subcategoria'}
+                </h3>
+              )}
+
+              {/* Produtos da Subcategoria */}
+              <div className="space-y-6">
+                {subcategoryProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    onClick={() => {
+                      const url = `/menu/${restaurantId}/produto/${product.id}`;
+                      const params = new URLSearchParams();
+                      if (selectedCategoryId) {
+                        params.set('categoria', selectedCategoryId.toString());
+                      }
+                      // Incluir mesa na URL se existir
+                      if (tableNumber) {
+                        params.set('mesa', tableNumber);
+                      }
+                      router.push(`${url}${params.toString() ? `?${params.toString()}` : ''}`);
+                    }}
+                    className={`rounded-lg overflow-hidden transition-all ${darkMode ? 'bg-[#1F1F1F] border border-[#2F2F2F]' : 'bg-white border border-gray-200 hover:border-gray-300'} cursor-pointer hover:shadow-lg`}
+                  >
+                    {/* Conteúdo superior: Título/Descrição e Imagem */}
+                    <div className="flex flex-row">
+                      {/* Informações do Produto */}
+                      <div className="p-4 flex-1 flex flex-col">
+                        <h4 className="text-lg font-semibold mb-2">
+                          {product.title}
+                        </h4>
+                        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          {product.description}
+                        </p>
+                      </div>
+
+                      {/* Imagens do Produto */}
+                      {product.images && product.images.length > 0 && (
+                        <div className="py-4 pr-4 w-32 sm:w-40 md:w-64 flex-shrink-0">
+                          <ProductImageCarousel
+                            images={product.images}
+                            productTitle={product.title}
+                          />
+                        </div>
+                      )}
                     </div>
 
-                    {/* Imagens do Produto */}
-                    {product.images && product.images.length > 0 && (
-                      <div className="py-4 pr-4 w-32 sm:w-40 md:w-64 flex-shrink-0">
-                        <ProductImageCarousel
-                          images={product.images}
-                          productTitle={product.title}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Preço ou Variações - Ocupa 100% da largura */}
-                  <div className="px-4 pb-4 w-full border-t border-gray-100">
-                    {product.priceType === 'unique' ? (
-                      <div className="flex justify-between items-center pt-4">
-                        <div
-                          className="text-xl font-bold"
-                          style={{ color: mainColor }}
-                        >
-                          {formatPrice(product)}
-                        </div>
-                        {allowOrders && product.price && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addItem({
-                                productId: product.id,
-                                productTitle: product.title,
-                                price: product.price!,
-                                image: product.images?.[0],
-                              });
-                            }}
-                            className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
-                            style={{ backgroundColor: mainColor }}
-                          >
-                            Adicionar
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="pt-4">
-                        <div className="space-y-2 mb-4">
-                          <p
-                            className="text-sm font-medium"
+                    {/* Preço ou Variações - Ocupa 100% da largura */}
+                    <div className={`px-4 pb-4 w-full ${darkMode ? 'border-t border-[#2F2F2F]' : 'border-t border-gray-100'}`}>
+                      {product.priceType === 'unique' ? (
+                        <div className="flex justify-between items-center pt-4">
+                          <div
+                            className="text-xl font-bold"
                             style={{ color: mainColor }}
                           >
-                            Opções disponíveis:
-                          </p>
-                          <div className="space-y-1">
-                            {product.variations?.map((variation, idx) => (
-                              <div
-                                key={idx}
-                                className="flex justify-between items-center"
-                              >
-                                <span className="text-sm text-gray-700">
-                                  {variation.label}
-                                </span>
-                                <span
-                                  className="font-semibold"
-                                  style={{ color: mainColor }}
-                                >
-                                  R${' '}
-                                  {variation.price
-                                    .toFixed(2)
-                                    .replace('.', ',')}
-                                </span>
-                              </div>
-                            ))}
+                            {formatPrice(product)}
                           </div>
-                        </div>
-                        {allowOrders && (
-                          <div className="flex justify-end">
+                          {allowOrders && product.price && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedProductForVariation(product);
+                                addItem({
+                                  productId: product.id,
+                                  productTitle: product.title,
+                                  price: product.price!,
+                                  image: product.images?.[0],
+                                });
                               }}
                               className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
                               style={{ backgroundColor: mainColor }}
                             >
                               Adicionar
                             </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="pt-4">
+                          <div className="space-y-2 mb-4">
+                            <p
+                              className="text-sm font-medium"
+                              style={{ color: mainColor }}
+                            >
+                              Opções disponíveis:
+                            </p>
+                            <div className="space-y-1">
+                              {product.variations?.map((variation, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex justify-between items-center"
+                                >
+                                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    {variation.label}
+                                  </span>
+                                  <span
+                                    className="font-semibold"
+                                    style={{ color: mainColor }}
+                                  >
+                                    R${' '}
+                                    {variation.price
+                                      .toFixed(2)
+                                      .replace('.', ',')}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    )}
+                          {allowOrders && (
+                            <div className="flex justify-end">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedProductForVariation(product);
+                                }}
+                                className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
+                                style={{ backgroundColor: mainColor }}
+                              >
+                                Adicionar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        );
+          );
         })}
       </div>
       {/* Modal de seleção de variação */}

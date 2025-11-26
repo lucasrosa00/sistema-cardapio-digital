@@ -51,10 +51,10 @@ interface CardapioPublicoPageProps {
   tableNumber?: string;
 }
 
-export default function CardapioPublicoPage({ 
-  menuData: initialMenuData, 
+export default function CardapioPublicoPage({
+  menuData: initialMenuData,
   allowOrders: initialAllowOrders = false,
-  tableNumber: initialTableNumber 
+  tableNumber: initialTableNumber
 }: CardapioPublicoPageProps = {}) {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -69,16 +69,14 @@ export default function CardapioPublicoPage({
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [allowOrders, setAllowOrders] = useState(initialAllowOrders);
   const [tableNumber, setTableNumber] = useState(initialTableNumber || tableNumberFromUrl || null);
-  
+
   const setTableNumberInCart = useCartStore((state) => state.setTableNumber);
   const setTableIdInCart = useCartStore((state) => state.setTableId);
-  
-  // Definir número da mesa no carrinho se fornecido
+
+  // Definir número da mesa e tableId no carrinho se fornecido
   useEffect(() => {
     if (tableNumber) {
       setTableNumberInCart(tableNumber);
-      // Nota: tableId será buscado quando necessário no checkout
-      // pois a API de mesas pode requerer autenticação
     }
   }, [tableNumber, setTableNumberInCart]);
 
@@ -146,6 +144,7 @@ export default function CardapioPublicoPage({
     mainColor: menu.restaurant.mainColor || '#ff0000',
     logo: menu.restaurant.logo || null,
     backgroundImage: menu.restaurant.backgroundImage || null,
+    darkMode: menu.restaurant.darkMode || false,
     paymentMethods: menu.restaurant.paymentMethods || null,
     address: menu.restaurant.address || null,
     about: menu.restaurant.about || null,
@@ -156,6 +155,7 @@ export default function CardapioPublicoPage({
     mainColor: '#ff0000',
     logo: null,
     backgroundImage: null,
+    darkMode: false,
     paymentMethods: null,
     address: null,
     about: null,
@@ -177,7 +177,7 @@ export default function CardapioPublicoPage({
       setError(null);
       try {
         let currentMenuData: PublicMenuDto;
-        
+
         // Se há tableNumber na URL, tentar carregar menu da mesa
         if (tableNumberFromUrl) {
           try {
@@ -186,6 +186,10 @@ export default function CardapioPublicoPage({
             setMenu(currentMenuData);
             setAllowOrders(true);
             setTableNumber(tableNumberFromUrl);
+            // Salvar tableId no store quando o cardápio é carregado
+            if (tableMenuData.tableId) {
+              setTableIdInCart(tableMenuData.tableId);
+            }
           } catch (tableError) {
             // Se falhar, carregar menu normal
             console.warn('Erro ao carregar menu da mesa, carregando menu normal:', tableError);
@@ -328,9 +332,14 @@ export default function CardapioPublicoPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div
+      className={`min-h-screen ${config.darkMode ? 'bg-[#1F1F1F] text-white' : 'bg-white text-gray-900'}`}
+      style={config.darkMode ? { backgroundColor: '#1F1F1F' } : {}}
+      data-dark-mode={config.darkMode ? 'true' : 'false'}
+    >
       {/* Cabeçalho */}
       <MenuHeader
+        darkMode={config.darkMode}
         restaurantName={config.restaurantName}
         mainColor={config.mainColor}
         logo={config.logo}
@@ -347,7 +356,7 @@ export default function CardapioPublicoPage({
       <main className="max-w-6xl mx-auto py-8">
         {activeCategories.length === 0 ? (
           <div className="text-center py-12 px-4 sm:px-6 lg:px-8">
-            <p className="text-lg text-gray-600">
+            <p className={`text-lg ${config.darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Nenhum item disponível no momento.
             </p>
           </div>
@@ -356,6 +365,7 @@ export default function CardapioPublicoPage({
             {/* Categorias - Row Horizontal Scrollável */}
             <div className="mb-2 sm:mb-6">
               <CategoryTabs
+                darkMode={config.darkMode}
                 categories={activeCategories}
                 selectedCategoryId={selectedCategoryId}
                 onSelectCategory={handleSelectCategory}
@@ -367,6 +377,7 @@ export default function CardapioPublicoPage({
             {selectedCategoryId && filteredSubcategories.length > 0 && (
               <div className="mb-2 sm:mb-6">
                 <SubcategoryList
+                  darkMode={config.darkMode}
                   subcategories={filteredSubcategories}
                   selectedSubcategoryId={selectedSubcategoryId}
                   onSelectSubcategory={handleSelectSubcategory}
@@ -378,6 +389,7 @@ export default function CardapioPublicoPage({
             {/* Produtos Agrupados por Subcategoria */}
             {selectedCategoryId && filteredProducts.length > 0 && (
               <ProductList
+                darkMode={config.darkMode}
                 products={filteredProducts}
                 subcategories={filteredSubcategories}
                 selectedSubcategoryId={selectedSubcategoryId}
@@ -391,7 +403,7 @@ export default function CardapioPublicoPage({
             {/* Mensagem quando não há produtos */}
             {selectedCategoryId && filteredProducts.length === 0 && (
               <div className="text-center py-12 px-4 sm:px-6 lg:px-8">
-                <p className="text-lg text-gray-600">
+                <p className={`text-lg ${config.darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   Nenhum produto disponível nesta categoria.
                 </p>
               </div>
@@ -401,7 +413,7 @@ export default function CardapioPublicoPage({
       </main>
 
       {/* Rodapé */}
-      <footer className="py-6 text-center text-gray-600">
+      <footer className={`py-6 text-center ${config.darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
         <p className="text-sm">
           © {new Date().getFullYear()} {config.restaurantName || 'Cardápio Digital'}
         </p>

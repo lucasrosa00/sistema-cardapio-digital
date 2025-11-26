@@ -19,6 +19,14 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Forçar fundo branco quando darkMode não estiver ativo, ignorando preferência do sistema */
+@media (prefers-color-scheme: dark) {
+  body:not([data-dark-mode="true"]) {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+  }
+}
+
 /* Fix para texto e placeholders transparentes no Safari iOS */
 input,
 textarea {

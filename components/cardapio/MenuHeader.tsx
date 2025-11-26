@@ -18,6 +18,7 @@ interface MenuHeaderProps {
   about?: string | null;
   openingHours?: string | null;
   mapUrl?: string | null;
+  darkMode?: boolean;
 }
 
 export function MenuHeader({
@@ -33,6 +34,7 @@ export function MenuHeader({
   about,
   openingHours,
   mapUrl,
+  darkMode = false,
 }: MenuHeaderProps) {
   const router = useRouter();
   const params = useParams();
@@ -75,7 +77,7 @@ export function MenuHeader({
 
   return (
     <header
-      className="sticky top-0 shadow-lg bg-white"
+      className={`sticky top-0 shadow-lg ${darkMode ? 'bg-[#1F1F1F]' : 'bg-white'}`}
       style={{ zIndex }}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -95,13 +97,13 @@ export function MenuHeader({
               >
                 {restaurantName || 'Cardápio Digital'}
               </h1>
-              <p className="text-sm text-gray-600">
+              <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                 Cardápio Digital
               </p>
               <div className="flex items-center gap-2 mt-1 relative">
                 <button
                   onClick={handleCopyLink}
-                  className="p-1.5 rounded-lg transition-colors hover:bg-gray-100 text-gray-600 hover:text-gray-900 active:bg-gray-200"
+                  className={`mr-1.5 rounded-lg transition-colors ${darkMode ? 'hover:bg-[#2F2F2F] hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900 active:bg-gray-200'}`}
                   title="Copiar link do cardápio"
                   aria-label="Copiar link do cardápio"
                 >
@@ -122,7 +124,7 @@ export function MenuHeader({
                 {paymentMethods && (
                   <button
                     onClick={() => setShowPaymentModal(true)}
-                    className="p-1.5 rounded-lg transition-colors hover:bg-gray-100 text-gray-600 hover:text-gray-900 active:bg-gray-200"
+                    className={`rounded-lg transition-colors ${darkMode ? 'hover:bg-[#2F2F2F] hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900 active:bg-gray-200'}`}
                     title="Métodos de Pagamento"
                     aria-label="Ver métodos de pagamento"
                   >
@@ -144,7 +146,7 @@ export function MenuHeader({
                 {(address || about || openingHours || mapUrl) && (
                   <button
                     onClick={() => router.push(getSobreUrl())}
-                    className="p-1.5 rounded-lg transition-colors hover:bg-gray-100 text-gray-600 hover:text-gray-900 active:bg-gray-200"
+                    className={`ml-1.5 rounded-lg transition-colors ${darkMode ? 'hover:bg-[#2F2F2F] hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900 active:bg-gray-200'}`}
                     title="Informações do Restaurante"
                     aria-label="Ver informações do restaurante"
                   >

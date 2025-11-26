@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
 import { ordersService } from '@/lib/api/ordersService';
+import { restaurantService } from '@/lib/api/restaurantService';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 
@@ -11,6 +13,8 @@ interface ShoppingCartProps {
 }
 
 export function ShoppingCart({ mainColor }: ShoppingCartProps) {
+  const params = useParams();
+  const slug = params.restaurantId as string;
   const [isOpen, setIsOpen] = useState(false);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [customerName, setCustomerName] = useState('');
@@ -49,20 +53,20 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
     setIsSubmitting(true);
     try {
       // Buscar tableId se ainda não estiver disponível
+      // A mesa já foi validada quando o cardápio foi carregado (se não estivesse ativa, não seria possível adicionar itens)
       let finalTableId = tableId;
-      if (!finalTableId && tableNumber) {
+      if (!finalTableId && tableNumber && slug) {
         try {
-          const { tablesService } = await import('@/lib/api/tablesService');
-          const tables = await tablesService.getAll();
-          const table = tables.find(t => t.number === tableNumber);
-          if (table) {
-            finalTableId = table.id;
+          // Obter o tableId através do endpoint público (sem autenticação)
+          const tableMenuData = await restaurantService.getTableMenu(slug, tableNumber);
+          if (tableMenuData.tableId) {
+            finalTableId = tableMenuData.tableId;
             const { setTableId } = useCartStore.getState();
-            setTableId(table.id);
+            setTableId(tableMenuData.tableId);
           } else {
-            throw new Error('Mesa não encontrada');
+            throw new Error('TableId não retornado pela API');
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Erro ao buscar ID da mesa:', error);
           alert('Erro ao identificar a mesa. Por favor, recarregue a página e tente novamente.');
           setIsSubmitting(false);
