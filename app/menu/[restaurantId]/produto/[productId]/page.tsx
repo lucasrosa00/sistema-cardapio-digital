@@ -281,7 +281,7 @@ export default function ProdutoDetalhesPage() {
               </div>
 
               {/* Preço ou Variações */}
-              <div className={`border-t pt-4 ${config.darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className={`border-t pt-4 ${config.darkMode ? 'border-[#2F2F2F]' : 'border-gray-200'}`}>
                 {product.priceType === 'unique' ? (
                   <div className="space-y-3">
                     <span className="text-xl md:text-2xl font-bold" style={{ color: config.mainColor }}>
@@ -319,10 +319,10 @@ export default function ProdutoDetalhesPage() {
                           key={idx}
                           onClick={() => allowOrders ? setSelectedVariation(variation.label) : undefined}
                           className={`flex justify-between items-center p-3 rounded-lg border transition-colors cursor-pointer ${selectedVariation === variation.label
-                              ? 'border-blue-500 bg-blue-50'
-                              : config.darkMode
-                                ? 'border-gray-700 hover:border-gray-600'
-                                : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-blue-500 bg-blue-50'
+                            : config.darkMode
+                              ? 'border-[#2F2F2F] hover:border-[#2F2F2F]'
+                              : 'border-gray-200 hover:border-gray-300'
                             }`}
                         >
                           <span className={`text-sm md:text-base font-medium ${config.darkMode ? 'text-white' : 'text-gray-900'}`}>
