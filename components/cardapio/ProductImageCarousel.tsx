@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getImageUrl } from '@/lib/utils/imageUrl';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 
 interface ProductImageCarouselProps {
   images: string[];
@@ -18,6 +19,12 @@ export function ProductImageCarousel({
 }: ProductImageCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(true);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [containerRef, isVisible] = useIntersectionObserver({
+    threshold: 0.1,
+    rootMargin: '100px', // Começar a carregar 100px antes de entrar na viewport
+    triggerOnce: true,
+  });
 
   // Detectar se é mobile ou desktop
   useEffect(() => {
@@ -71,21 +78,50 @@ export function ProductImageCarousel({
     setCurrentIndex(index);
   };
 
+  // Resetar estado de carregamento quando a imagem mudar (apenas se já estiver visível)
+  useEffect(() => {
+    if (isVisible) {
+      setImageLoaded(false);
+    }
+  }, [currentIndex]);
+
   if (images.length === 0) {
     return null;
   }
 
+  // Determinar se deve carregar a imagem (apenas quando visível)
+  const shouldLoadImage = isVisible;
+  const imageUrl = shouldLoadImage ? getImageUrl(images[currentIndex]) : undefined;
+
   return (
-    <div className="relative w-full">
-      <div className="relative overflow-hidden rounded-lg w-full bg-gray-100 flex items-center justify-center">
-        <img
-          src={getImageUrl(images[currentIndex])}
-          alt={`${productTitle} - Imagem ${currentIndex + 1}`}
-          className="max-w-full max-h-full w-auto h-auto object-contain"
-          onError={(e) => {
-            console.error('Erro ao carregar imagem:', images[currentIndex]);
-          }}
-        />
+    <div className="relative w-full" ref={containerRef}>
+      <div className="relative overflow-hidden rounded-lg w-full bg-gray-100 flex items-center justify-center min-h-[120px]">
+        {shouldLoadImage ? (
+          <>
+            {!imageLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+              </div>
+            )}
+            <img
+              src={imageUrl}
+              alt={`${productTitle} - Imagem ${currentIndex + 1}`}
+              className={`max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-300 ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              onLoad={() => setImageLoaded(true)}
+              onError={(e) => {
+                console.error('Erro ao carregar imagem:', images[currentIndex]);
+                setImageLoaded(true); // Mostrar mesmo com erro para não ficar em loading infinito
+              }}
+              loading="lazy"
+            />
+          </>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center min-h-[120px]">
+            <div className="w-8 h-8 border-4 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+          </div>
+        )}
 
         {images.length > 1 && (
           <>
