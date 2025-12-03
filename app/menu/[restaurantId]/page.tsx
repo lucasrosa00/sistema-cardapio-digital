@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { restaurantService } from '@/lib/api/restaurantService';
-import type { PublicMenuDto, CategoryWithProductsDto, SubcategoryWithProductsDto, ProductDto } from '@/lib/api/types';
+import type { PublicMenuDto } from '@/lib/api/types';
 import { useCartStore } from '@/store/cartStore';
+import { useMenuStore } from '@/store/menuStore';
 import { CategoryTabs } from '@/components/cardapio/CategoryTabs';
 import { SubcategoryList } from '@/components/cardapio/SubcategoryList';
 import { ProductList } from '@/components/cardapio/ProductList';
@@ -45,33 +46,25 @@ type Product = {
   order: number;
 };
 
-interface CardapioPublicoPageProps {
-  menuData?: PublicMenuDto;
-  allowOrders?: boolean;
-  tableNumber?: string;
-}
-
-export default function CardapioPublicoPage({
-  menuData: initialMenuData,
-  allowOrders: initialAllowOrders = false,
-  tableNumber: initialTableNumber
-}: CardapioPublicoPageProps = {}) {
+export default function CardapioPublicoPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const slug = params.restaurantId as string;
   const tableNumberFromUrl = params.tableNumber as string | undefined;
 
-  const [menu, setMenu] = useState<PublicMenuDto | null>(initialMenuData || null);
-  const [isLoading, setIsLoading] = useState(!initialMenuData);
+  const [menu, setMenu] = useState<PublicMenuDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<number | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [allowOrders, setAllowOrders] = useState(initialAllowOrders);
-  const [tableNumber, setTableNumber] = useState(initialTableNumber || tableNumberFromUrl || null);
+  const [allowOrders, setAllowOrders] = useState(false);
+  const [tableNumber, setTableNumber] = useState(tableNumberFromUrl || null);
 
   const setTableNumberInCart = useCartStore((state) => state.setTableNumber);
   const setTableIdInCart = useCartStore((state) => state.setTableId);
+  const setMenuInStore = useMenuStore((state) => state.setMenu);
+  const getMenuFromStore = useMenuStore((state) => state.getMenu);
 
   // Definir número da mesa e tableId no carrinho se fornecido
   useEffect(() => {
@@ -163,20 +156,50 @@ export default function CardapioPublicoPage({
     mapUrl: null,
   };
 
-  // Carregar menu público (apenas se não foi fornecido via props)
+  // Carregar menu público
   useEffect(() => {
-    if (initialMenuData) {
-      // Menu já foi fornecido via props, não precisa carregar
-      setMenu(initialMenuData);
-      setIsLoading(false);
-      return;
-    }
-
     const loadMenu = async () => {
       setIsLoading(true);
       setError(null);
       try {
         let currentMenuData: PublicMenuDto;
+
+        // Verificar se já existe menu no store
+        const cachedMenu = getMenuFromStore(slug);
+        if (cachedMenu && !tableNumberFromUrl) {
+          // Usar menu do cache se não houver tableNumber (menu de mesa pode ser diferente)
+          currentMenuData = cachedMenu;
+          setMenu(currentMenuData);
+          setAllowOrders(false);
+          setIsLoading(false);
+          
+          // Continuar com a lógica de seleção de categoria
+          const categoriaParam = searchParams.get('categoria');
+          if (categoriaParam) {
+            const categoriaId = Number(categoriaParam);
+            const categoryExists = currentMenuData.categories?.some(
+              (cat) => cat.category.id === categoriaId && cat.category.active
+            );
+            if (categoryExists) {
+              setSelectedCategoryId(categoriaId);
+            } else {
+              const firstActiveCategory = currentMenuData.categories?.find(
+                (cat) => cat.category.active
+              );
+              if (firstActiveCategory) {
+                setSelectedCategoryId(firstActiveCategory.category.id);
+              }
+            }
+          } else {
+            const firstActiveCategory = currentMenuData.categories?.find(
+              (cat) => cat.category.active
+            );
+            if (firstActiveCategory) {
+              setSelectedCategoryId(firstActiveCategory.category.id);
+            }
+          }
+          return;
+        }
 
         // Se há tableNumber na URL, tentar carregar menu da mesa
         if (tableNumberFromUrl) {
@@ -190,38 +213,53 @@ export default function CardapioPublicoPage({
             if (tableMenuData.tableId) {
               setTableIdInCart(tableMenuData.tableId);
             }
+            // Não salvar menu de mesa no store (pode ser diferente do menu público)
+            // Mas verificar se já existe menu público no store, se não, carregar e salvar
+            if (!getMenuFromStore(slug)) {
+              const publicMenu = await restaurantService.getPublicMenu(slug);
+              setMenuInStore(slug, publicMenu);
+            }
           } catch (tableError) {
             // Se falhar, carregar menu normal
             console.warn('Erro ao carregar menu da mesa, carregando menu normal:', tableError);
             currentMenuData = await restaurantService.getPublicMenu(slug);
             setMenu(currentMenuData);
             setAllowOrders(false);
+            // Salvar menu no store para reutilização
+            setMenuInStore(slug, currentMenuData);
           }
         } else {
           // Carregar menu normal
           currentMenuData = await restaurantService.getPublicMenu(slug);
-          console.log("menuData: ", currentMenuData)
           setMenu(currentMenuData);
           setAllowOrders(false);
+          // Salvar menu no store para reutilização
+          setMenuInStore(slug, currentMenuData);
         }
 
         // Verificar se há categoria na URL (query parameter)
         const categoriaParam = searchParams.get('categoria');
         if (categoriaParam) {
           const categoriaId = Number(categoriaParam);
-          const categoryExists = currentMenuData.categories?.some((cat: any) => cat.category.id === categoriaId && cat.category.active);
+          const categoryExists = currentMenuData.categories?.some(
+            (cat) => cat.category.id === categoriaId && cat.category.active
+          );
           if (categoryExists) {
             setSelectedCategoryId(categoriaId);
           } else {
             // Se a categoria não existe ou não está ativa, selecionar primeira categoria ativa
-            const firstActiveCategory = currentMenuData.categories?.find((cat: any) => cat.category.active);
+            const firstActiveCategory = currentMenuData.categories?.find(
+              (cat) => cat.category.active
+            );
             if (firstActiveCategory) {
               setSelectedCategoryId(firstActiveCategory.category.id);
             }
           }
         } else {
           // Selecionar primeira categoria ativa por padrão
-          const firstActiveCategory = currentMenuData.categories?.find((cat: any) => cat.category.active);
+          const firstActiveCategory = currentMenuData.categories?.find(
+            (cat) => cat.category.active
+          );
           if (firstActiveCategory) {
             setSelectedCategoryId(firstActiveCategory.category.id);
           }
@@ -237,8 +275,7 @@ export default function CardapioPublicoPage({
     if (slug) {
       loadMenu();
     }
-  }, [slug, searchParams, initialMenuData, tableNumberFromUrl]);
-
+  }, [slug, searchParams, tableNumberFromUrl, setTableIdInCart, setMenuInStore, getMenuFromStore]);
 
   // Resetar subcategoria selecionada quando categoria mudar
   useEffect(() => {
@@ -334,7 +371,6 @@ export default function CardapioPublicoPage({
   return (
     <div
       className={`min-h-screen ${config.darkMode ? 'bg-[#1F1F1F] text-white' : 'bg-white text-gray-900'}`}
-      style={config.darkMode ? { backgroundColor: '#1F1F1F' } : {}}
       data-dark-mode={config.darkMode ? 'true' : 'false'}
     >
       {/* Cabeçalho */}

@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { restaurantService } from '@/lib/api/restaurantService';
 import type { PublicMenuDto } from '@/lib/api/types';
 import { useCartStore } from '@/store/cartStore';
+import { useMenuStore } from '@/store/menuStore';
 import { ProductImageCarousel } from '@/components/cardapio/ProductImageCarousel';
 import { MenuHeader } from '@/components/cardapio/MenuHeader';
 import { ShoppingCart } from '@/components/cardapio/ShoppingCart';
@@ -45,6 +46,8 @@ export default function ProdutoDetalhesPage() {
   const [allowOrders, setAllowOrders] = useState(false);
 
   const addItem = useCartStore((state) => state.addItem);
+  const getMenuFromStore = useMenuStore((state) => state.getMenu);
+  const setMenuInStore = useMenuStore((state) => state.setMenu);
 
   // Carregar menu e encontrar produto
   useEffect(() => {
@@ -52,30 +55,46 @@ export default function ProdutoDetalhesPage() {
       setIsLoading(true);
       setError(null);
       try {
-        // Se há mesa, tentar carregar menu da mesa primeiro para validar se está ativa
-        let menuData: PublicMenuDto;
+        // Verificar se já existe menu no store
+        let menuData: PublicMenuDto | null = getMenuFromStore(slug);
         let canOrder = false;
 
-        if (tableNumber) {
-          try {
-            // Tentar carregar menu da mesa - se funcionar, a mesa está ativa
-            const tableMenuData = await restaurantService.getTableMenu(slug, tableNumber);
-            menuData = tableMenuData.menu;
-            canOrder = true; // Se conseguiu carregar, a mesa está ativa e permite pedidos
-            // Salvar tableId no store quando o cardápio é carregado
-            if (tableMenuData.tableId) {
-              const { setTableId } = useCartStore.getState();
-              setTableId(tableMenuData.tableId);
+        // Se não há menu no store ou há tableNumber (menu de mesa pode ser diferente), carregar
+        if (!menuData || tableNumber) {
+          if (tableNumber) {
+            try {
+              // Tentar carregar menu da mesa - se funcionar, a mesa está ativa
+              const tableMenuData = await restaurantService.getTableMenu(slug, tableNumber);
+              menuData = tableMenuData.menu;
+              canOrder = true; // Se conseguiu carregar, a mesa está ativa e permite pedidos
+              // Salvar tableId no store quando o cardápio é carregado
+              if (tableMenuData.tableId) {
+                const { setTableId } = useCartStore.getState();
+                setTableId(tableMenuData.tableId);
+              }
+              // Não salvar menu de mesa no store (pode ser diferente do menu público)
+            } catch {
+              // Se falhar, mesa não está ativa ou não existe - tentar usar menu do store ou carregar
+              menuData = getMenuFromStore(slug);
+              if (!menuData) {
+                menuData = await restaurantService.getPublicMenu(slug);
+                setMenuInStore(slug, menuData);
+              }
+              canOrder = false;
             }
-          } catch {
-            // Se falhar, mesa não está ativa ou não existe - carregar menu normal sem pedidos
+          } else {
+            // Sem mesa - carregar menu normal
             menuData = await restaurantService.getPublicMenu(slug);
             canOrder = false;
+            // Salvar menu no store para reutilização
+            setMenuInStore(slug, menuData);
           }
-        } else {
-          // Sem mesa na URL ou no carrinho - carregar menu normal sem pedidos
-          menuData = await restaurantService.getPublicMenu(slug);
-          canOrder = false;
+        }
+
+        if (!menuData) {
+          setError('Menu não encontrado');
+          setIsLoading(false);
+          return;
         }
 
         setMenu(menuData);
@@ -144,7 +163,7 @@ export default function ProdutoDetalhesPage() {
     if (slug && productId) {
       loadMenu();
     }
-  }, [slug, productId, tableNumber]);
+  }, [slug, productId, tableNumber, getMenuFromStore, setMenuInStore]);
 
   const config = menu?.restaurant ? {
     restaurantName: menu.restaurant.restaurantName || 'Cardápio Digital',
