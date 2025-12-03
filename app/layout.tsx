@@ -13,8 +13,29 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pink Tech - Sistemas tecnológicos para seu negócio",
-  description: "Sistemas tecnológicos para seu negócio",
+  title: "Cardápio Digital - Transforme seu restaurante com tecnologia",
+  description:
+    "Cardápio digital completo para restaurantes, hamburguerias e lanchonetes. Rápido, fácil de editar e funciona em 3G/4G. Crie seu cardápio agora por apenas R$ 300/ano.",
+  openGraph: {
+    title: "Cardápio Digital - Transforme seu restaurante com tecnologia",
+    description:
+      "Cardápio digital completo para restaurantes, hamburguerias e lanchonetes. Rápido, fácil de editar e funciona em 3G/4G.",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Cardápio Digital",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cardápio Digital - Transforme seu restaurante com tecnologia",
+    description:
+      "Cardápio digital completo para restaurantes, hamburguerias e lanchonetes. Rápido, fácil de editar e funciona em 3G/4G.",
+  },
 };
 
 export default function RootLayout({
