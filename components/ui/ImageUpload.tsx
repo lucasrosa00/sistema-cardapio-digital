@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { getImageUrl } from '@/lib/utils/imageUrl';
+import imageCompression from 'browser-image-compression';
 
 interface ImageFile {
   file: File;
@@ -24,6 +25,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<ImageFile[]>([]);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressionProgress, setCompressionProgress] = useState<Record<string, number>>({});
 
   // Limpar previews quando componente desmontar ou selectedFiles mudar
   useEffect(() => {
@@ -36,77 +39,37 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     };
   }, [selectedFiles]);
 
-  // Função para comprimir e redimensionar imagem
-  const compressImage = (file: File): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const MAX_WIDTH = 1200;
-          const MAX_HEIGHT = 1200;
-          const QUALITY = 0.8;
-
-          let width = img.width;
-          let height = img.height;
-
-          // Redimensiona se necessário
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height = (height * MAX_WIDTH) / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width = (width * MAX_HEIGHT) / height;
-              height = MAX_HEIGHT;
-            }
-          }
-
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-
-          if (!ctx) {
-            reject(new Error('Não foi possível criar contexto do canvas'));
-            return;
-          }
-
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) {
-                reject(new Error('Erro ao comprimir imagem'));
-                return;
-              }
-              
-              // Criar novo File com o blob comprimido
-              const compressedFile = new File([blob], file.name, {
-                type: 'image/jpeg',
-                lastModified: Date.now(),
-              });
-              
-              resolve(compressedFile);
-            },
-            'image/jpeg',
-            QUALITY
-          );
-        };
-        img.onerror = reject;
-        img.src = e.target?.result as string;
+  // Função para comprimir imagem usando browser-image-compression
+  const compressImage = async (file: File, onProgress?: (progress: number) => void): Promise<File> => {
+    try {
+      const options = {
+        maxSizeMB: 0.6, // Tamanho máximo em MB (mesmo da página de compressão)
+        maxWidthOrHeight: 1920, // Dimensão máxima
+        useWebWorker: true,
+        fileType: file.type.startsWith('image/') ? file.type : 'image/jpeg',
+        onProgress: onProgress || (() => {}),
       };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+
+      const compressedFile = await imageCompression(file, options);
+      
+      // Manter o nome original do arquivo
+      const originalName = file.name;
+      const renamedFile = new File([compressedFile], originalName, {
+        type: compressedFile.type,
+        lastModified: compressedFile.lastModified,
+      });
+
+      return renamedFile;
+    } catch (error) {
+      console.error('Erro ao comprimir imagem:', error);
+      // Se houver erro na compressão, retornar o arquivo original
+      return file;
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB em bytes
 
     const remainingSlots = maxImages - (images.length + selectedFiles.length);
     
@@ -134,34 +97,22 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       const message = `${heicCount} ${fileText} ${heicCount === 1 ? 'foi' : 'foram'} detectado(s). Arquivos HEIC podem não ser suportados por todos os navegadores. Se houver erro, tente converter para JPEG ou PNG antes de enviar.`;
       alert(message);
     }
-    
-    // Verificar tamanho dos arquivos antes de processar
-    const oversizedFiles = allFiles.filter((file) => file.size > MAX_FILE_SIZE);
-    
-    if (oversizedFiles.length > 0) {
-      const fileCount = oversizedFiles.length;
-      const fileText = fileCount === 1 ? 'imagem' : 'imagens';
-      const confirmMessage = `${fileCount} ${fileText} excede(m) o limite de 5MB. Deseja comprimir ${fileText === 'imagem' ? 'a imagem' : 'as imagens'} automaticamente?`;
-      
-      const shouldCompress = window.confirm(confirmMessage);
-      
-      if (!shouldCompress) {
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        return;
-      }
-    }
 
     const filesToProcess = allFiles.slice(0, remainingSlots);
 
     if (filesToProcess.length === 0) return;
 
+    setIsCompressing(true);
+    setCompressionProgress({});
+
     try {
-      // Processar todos os arquivos
+      // Comprimir todas as imagens automaticamente (mesma compressão da página de compressão)
       const processedFiles = await Promise.all(
         filesToProcess.map(async (file) => {
           try {
+            // Inicializar progresso
+            setCompressionProgress(prev => ({ ...prev, [file.name]: 0 }));
+
             // Verificar se é arquivo HEIC
             const isHeic = file.name.toLowerCase().endsWith('.heic') || 
                           file.name.toLowerCase().endsWith('.heif') ||
@@ -169,24 +120,24 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                           file.type === 'image/heif';
             
             if (isHeic) {
-              // Tentar processar HEIC - pode falhar se o navegador não suportar
+              // Tentar comprimir HEIC - pode falhar se o navegador não suportar
               try {
-                if (file.size > MAX_FILE_SIZE) {
-                  return await compressImage(file);
-                } else {
-                  return file;
-                }
+                const compressed = await compressImage(file, (progress) => {
+                  setCompressionProgress(prev => ({ ...prev, [file.name]: progress }));
+                });
+                setCompressionProgress(prev => ({ ...prev, [file.name]: 100 }));
+                return compressed;
               } catch (heicError) {
                 throw new Error(`Arquivo HEIC "${file.name}" não pode ser processado. Por favor, converta para JPEG ou PNG antes de enviar.`);
               }
             }
 
-            // Comprimir se necessário
-            if (file.size > MAX_FILE_SIZE) {
-              return await compressImage(file);
-            } else {
-              return file;
-            }
+            // Comprimir todas as imagens automaticamente
+            const compressed = await compressImage(file, (progress) => {
+              setCompressionProgress(prev => ({ ...prev, [file.name]: progress }));
+            });
+            setCompressionProgress(prev => ({ ...prev, [file.name]: 100 }));
+            return compressed;
           } catch (fileError) {
             if (fileError instanceof Error && fileError.message.includes('HEIC')) {
               throw fileError;
@@ -214,6 +165,9 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       console.error('Erro ao processar imagens:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro ao processar imagens. Tente novamente.';
       alert(errorMessage);
+    } finally {
+      setIsCompressing(false);
+      setCompressionProgress({});
     }
 
     // Reset input
@@ -259,22 +213,47 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          disabled={allImages.length >= maxImages}
+          disabled={allImages.length >= maxImages || isCompressing}
           className={`
             px-4 py-2 border-2 border-dashed rounded-lg
             transition-colors
-            ${allImages.length >= maxImages
+            ${allImages.length >= maxImages || isCompressing
               ? 'border-gray-300 text-gray-400 cursor-not-allowed'
               : 'border-gray-400 text-gray-700 hover:border-blue-500 hover:text-blue-600'
             }
           `}
         >
-          + Adicionar Imagem
+          {isCompressing ? 'Comprimindo...' : '+ Adicionar Imagem'}
         </button>
         <span className="text-sm text-gray-500">
           {allImages.length} / {maxImages} imagens
         </span>
       </div>
+
+      {/* Indicador de compressão */}
+      {isCompressing && Object.keys(compressionProgress).length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm font-medium text-blue-900 mb-3">
+            Comprimindo imagens...
+          </p>
+          <div className="space-y-2">
+            {Object.entries(compressionProgress).map(([fileName, progress]) => (
+              <div key={fileName}>
+                <div className="flex justify-between text-xs text-blue-700 mb-1">
+                  <span className="truncate flex-1 mr-2">{fileName}</span>
+                  <span>{Math.round(progress)}%</span>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <input
         ref={fileInputRef}
