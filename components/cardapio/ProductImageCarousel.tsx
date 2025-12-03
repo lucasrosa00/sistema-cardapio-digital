@@ -127,6 +127,7 @@ export function ProductImageCarousel({
           <>
             {/* Botões de navegação */}
             <button
+              type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -150,6 +151,7 @@ export function ProductImageCarousel({
               </svg>
             </button>
             <button
+              type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -178,6 +180,7 @@ export function ProductImageCarousel({
               {images.map((_, index) => (
                 <button
                   key={index}
+                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();

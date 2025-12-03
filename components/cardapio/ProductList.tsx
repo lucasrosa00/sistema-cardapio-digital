@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Product, Subcategory } from '@/lib/mockData';
 import { ProductImageCarousel } from './ProductImageCarousel';
 import { VariationSelectionModal } from './VariationSelectionModal';
@@ -28,7 +29,6 @@ export function ProductList({
   allowOrders = false,
   darkMode = false,
 }: ProductListProps) {
-  const router = useRouter();
   const params = useParams();
   const restaurantId = params.restaurantId as string;
   const tableNumberFromUrl = params.tableNumber as string | undefined;
@@ -113,23 +113,26 @@ export function ProductList({
 
               {/* Produtos da Subcategoria */}
               <div className="space-y-6">
-                {subcategoryProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    onClick={() => {
-                      const url = `/menu/${restaurantId}/produto/${product.id}`;
-                      const params = new URLSearchParams();
-                      if (selectedCategoryId) {
-                        params.set('categoria', selectedCategoryId.toString());
-                      }
-                      // Incluir mesa na URL se existir
-                      if (tableNumber) {
-                        params.set('mesa', tableNumber);
-                      }
-                      router.push(`${url}${params.toString() ? `?${params.toString()}` : ''}`);
-                    }}
-                    className={`rounded-lg overflow-hidden transition-all ${darkMode ? 'bg-[#1F1F1F] border border-[#2F2F2F]' : 'bg-white border border-gray-200 hover:border-gray-300'} cursor-pointer hover:shadow-lg`}
-                  >
+                {subcategoryProducts.map((product) => {
+                  // Construir URL do produto
+                  const url = `/menu/${restaurantId}/produto/${product.id}`;
+                  const params = new URLSearchParams();
+                  if (selectedCategoryId) {
+                    params.set('categoria', selectedCategoryId.toString());
+                  }
+                  // Incluir mesa na URL se existir
+                  if (tableNumber) {
+                    params.set('mesa', tableNumber);
+                  }
+                  const productUrl = `${url}${params.toString() ? `?${params.toString()}` : ''}`;
+
+                  return (
+                    <Link
+                      key={product.id}
+                      href={productUrl}
+                      className={`block rounded-lg overflow-hidden transition-all ${darkMode ? 'bg-[#1F1F1F] border border-[#2F2F2F]' : 'bg-white border border-gray-200 hover:border-gray-300'} cursor-pointer hover:shadow-lg touch-manipulation`}
+                      style={{ touchAction: 'manipulation' }}
+                    >
                     {/* Conteúdo superior: Título/Descrição e Imagem */}
                     <div className="flex flex-row">
                       {/* Informações do Produto */}
@@ -166,6 +169,7 @@ export function ProductList({
                           {allowOrders && product.price && (
                             <button
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
                                 addItem({
                                   productId: product.id,
@@ -216,6 +220,7 @@ export function ProductList({
                             <div className="flex justify-end">
                               <button
                                 onClick={(e) => {
+                                  e.preventDefault();
                                   e.stopPropagation();
                                   setSelectedProductForVariation(product);
                                 }}
@@ -229,8 +234,9 @@ export function ProductList({
                         </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           );
