@@ -9,6 +9,7 @@ export interface RestaurantConfig {
   backgroundImage: string | null;
   darkMode: boolean;
   tableOrderEnabled: boolean;
+  whatsAppOrderEnabled: boolean;
   paymentMethods: string | null;
   address: string | null;
   about: string | null;
@@ -24,6 +25,7 @@ const dtoToConfig = (dto: RestaurantConfigDto): RestaurantConfig => ({
   backgroundImage: dto.backgroundImage && dto.backgroundImage.trim() !== '' ? dto.backgroundImage : null,
   darkMode: dto.darkMode ?? false,
   tableOrderEnabled: dto.tableOrderEnabled ?? false,
+  whatsAppOrderEnabled: dto.whatsAppOrderEnabled ?? false,
   paymentMethods: dto.paymentMethods && dto.paymentMethods.trim() !== '' ? dto.paymentMethods : null,
   address: dto.address && dto.address.trim() !== '' ? dto.address : null,
   about: dto.about && dto.about.trim() !== '' ? dto.about : null,
@@ -78,6 +80,7 @@ export const useRestaurantConfigStore = create<RestaurantConfigState>()((set, ge
         backgroundImage: updates.backgroundImage !== undefined ? updates.backgroundImage : undefined,
         darkMode: updates.darkMode !== undefined ? updates.darkMode : undefined,
         tableOrderEnabled: updates.tableOrderEnabled !== undefined ? updates.tableOrderEnabled : undefined,
+        whatsAppOrderEnabled: updates.whatsAppOrderEnabled !== undefined ? updates.whatsAppOrderEnabled : undefined,
         paymentMethods: updates.paymentMethods !== undefined ? updates.paymentMethods : undefined,
         address: updates.address !== undefined ? updates.address : undefined,
         about: updates.about !== undefined ? updates.about : undefined,

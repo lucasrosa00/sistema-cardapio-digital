@@ -26,6 +26,7 @@ export default function ConfiguracoesPage() {
     backgroundImage: null as string | null,
     darkMode: false,
     tableOrderEnabled: false,
+    whatsAppOrderEnabled: false,
     paymentMethods: '',
     address: '',
     openingHours: '',
@@ -49,6 +50,7 @@ export default function ConfiguracoesPage() {
             backgroundImage: config.backgroundImage,
             darkMode: config.darkMode ?? false,
             tableOrderEnabled: config.tableOrderEnabled,
+            whatsAppOrderEnabled: config.whatsAppOrderEnabled ?? false,
             paymentMethods: config.paymentMethods || '',
             address: config.address || '',
             openingHours: config.openingHours || '',
@@ -63,6 +65,7 @@ export default function ConfiguracoesPage() {
             backgroundImage: null,
             darkMode: false,
             tableOrderEnabled: false,
+            whatsAppOrderEnabled: false,
             paymentMethods: '',
             address: '',
             openingHours: '',
@@ -79,6 +82,7 @@ export default function ConfiguracoesPage() {
           backgroundImage: null,
           darkMode: false,
           tableOrderEnabled: false,
+          whatsAppOrderEnabled: false,
           paymentMethods: '',
           address: '',
           openingHours: '',
@@ -117,6 +121,7 @@ export default function ConfiguracoesPage() {
         backgroundImage: formData.backgroundImage,
         darkMode: formData.darkMode,
         tableOrderEnabled: formData.tableOrderEnabled,
+        whatsAppOrderEnabled: formData.whatsAppOrderEnabled,
         paymentMethods: formData.paymentMethods.trim() || null,
         address: formData.address.trim() || null,
         openingHours: formData.openingHours.trim() || null,
@@ -134,6 +139,7 @@ export default function ConfiguracoesPage() {
           backgroundImage: updatedConfig.backgroundImage,
           darkMode: updatedConfig.darkMode ?? false,
           tableOrderEnabled: updatedConfig.tableOrderEnabled,
+          whatsAppOrderEnabled: updatedConfig.whatsAppOrderEnabled ?? false,
           paymentMethods: updatedConfig.paymentMethods || '',
           address: updatedConfig.address || '',
           openingHours: updatedConfig.openingHours || '',
@@ -263,6 +269,20 @@ export default function ConfiguracoesPage() {
               />
               <p className="text-xs text-gray-500 mt-2">
                 Quando habilitado, os clientes poderão fazer pedidos diretamente pelo cardápio digital
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Pedidos pelo WhatsApp
+              </label>
+              <Switch
+                label="Permitir realizar pedidos pelo WhatsApp"
+                checked={formData.whatsAppOrderEnabled}
+                onChange={(checked) => setFormData((prev) => ({ ...prev, whatsAppOrderEnabled: checked }))}
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Quando habilitado, os clientes poderão fazer pedidos através do WhatsApp
               </p>
             </div>
 

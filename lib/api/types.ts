@@ -30,6 +30,7 @@ export interface RestaurantConfigDto {
   darkMode: boolean;
   slug: string | null;
   tableOrderEnabled: boolean;
+  whatsAppOrderEnabled: boolean;
   paymentMethods: string | null;
   address: string | null;
   about: string | null;
@@ -144,6 +145,7 @@ export interface UpdateRestaurantConfigDto {
   darkMode?: boolean | null;
   slug?: string | null;
   tableOrderEnabled?: boolean | null;
+  whatsAppOrderEnabled?: boolean | null;
   paymentMethods?: string | null;
   address?: string | null;
   about?: string | null;
