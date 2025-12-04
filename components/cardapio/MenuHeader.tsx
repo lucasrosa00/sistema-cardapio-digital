@@ -4,6 +4,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useState } from 'react';
 import { useCartStore } from '@/store/cartStore';
 import { PaymentMethodsModal } from './PaymentMethodsModal';
+import { getServiceTypeLabel } from '@/lib/utils/serviceType';
 
 interface MenuHeaderProps {
   restaurantName: string;
@@ -19,6 +20,7 @@ interface MenuHeaderProps {
   openingHours?: string | null;
   mapUrl?: string | null;
   darkMode?: boolean;
+  serviceType?: 'Menu' | 'Catalog' | null;
 }
 
 export function MenuHeader({
@@ -35,6 +37,7 @@ export function MenuHeader({
   openingHours,
   mapUrl,
   darkMode = false,
+  serviceType = null,
 }: MenuHeaderProps) {
   const router = useRouter();
   const params = useParams();
@@ -95,10 +98,10 @@ export function MenuHeader({
                 className="text-2xl md:text-3xl font-bold truncate"
                 style={{ color: mainColor }}
               >
-                {restaurantName || 'Cardápio Digital'}
+                {restaurantName || getServiceTypeLabel(serviceType)}
               </h1>
               <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                Cardápio Digital
+                {getServiceTypeLabel(serviceType)}
               </p>
               <div className="flex items-center gap-2 mt-1 relative">
                 <button

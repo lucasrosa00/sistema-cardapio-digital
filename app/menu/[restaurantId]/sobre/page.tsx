@@ -7,6 +7,7 @@ import type { PublicMenuDto } from '@/lib/api/types';
 import { useCartStore } from '@/store/cartStore';
 import { getImageUrl } from '@/lib/utils/imageUrl';
 import { Spinner } from '@/components/ui/Spinner';
+import { getServiceTypeLabel } from '@/lib/utils/serviceType';
 
 export default function SobreRestaurantePage() {
   const params = useParams();
@@ -73,11 +74,13 @@ export default function SobreRestaurantePage() {
   }
 
   const restaurant = menu.restaurant;
+  const defaultServiceLabel = getServiceTypeLabel(restaurant.serviceType);
   const config = {
-    restaurantName: restaurant.restaurantName || 'Cardápio Digital',
+    restaurantName: restaurant.restaurantName || defaultServiceLabel,
     mainColor: restaurant.mainColor || '#ff0000',
     logo: restaurant.logo || null,
     backgroundImage: restaurant.backgroundImage || null,
+    serviceType: restaurant.serviceType,
     address: restaurant.address || null,
     about: restaurant.about || null,
     openingHours: restaurant.openingHours || null,

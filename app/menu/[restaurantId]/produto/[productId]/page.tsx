@@ -11,6 +11,7 @@ import { MenuHeader } from '@/components/cardapio/MenuHeader';
 import { ShoppingCart } from '@/components/cardapio/ShoppingCart';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
+import { getServiceTypeLabel } from '@/lib/utils/serviceType';
 
 type Product = {
   id: number;
@@ -165,23 +166,26 @@ export default function ProdutoDetalhesPage() {
     }
   }, [slug, productId, tableNumber, getMenuFromStore, setMenuInStore]);
 
+  const defaultServiceLabel = getServiceTypeLabel(menu?.restaurant?.serviceType);
   const config = menu?.restaurant ? {
-    restaurantName: menu.restaurant.restaurantName || 'Cardápio Digital',
+    restaurantName: menu.restaurant.restaurantName || defaultServiceLabel,
     mainColor: menu.restaurant.mainColor || '#ff0000',
     logo: menu.restaurant.logo || null,
     backgroundImage: menu.restaurant.backgroundImage || null,
     darkMode: menu.restaurant.darkMode || false,
+    serviceType: menu.restaurant.serviceType,
     paymentMethods: menu.restaurant.paymentMethods || null,
     address: menu.restaurant.address || null,
     about: menu.restaurant.about || null,
     openingHours: menu.restaurant.openingHours || null,
     mapUrl: menu.restaurant.mapUrl || null,
   } : {
-    restaurantName: 'Cardápio Digital',
+    restaurantName: defaultServiceLabel,
     mainColor: '#ff0000',
     logo: null,
     backgroundImage: null,
     darkMode: false,
+    serviceType: null,
     paymentMethods: null,
     address: null,
     about: null,
@@ -270,6 +274,7 @@ export default function ProdutoDetalhesPage() {
         about={config.about}
         openingHours={config.openingHours}
         mapUrl={config.mapUrl}
+        serviceType={config.serviceType}
       />
 
       {/* Conteúdo */}
@@ -394,7 +399,7 @@ export default function ProdutoDetalhesPage() {
       {/* Rodapé */}
       <footer className={`py-6 text-center ${config.darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
         <p className="text-sm">
-          © {new Date().getFullYear()} {config.restaurantName || 'Cardápio Digital'}
+          © {new Date().getFullYear()} {config.restaurantName || getServiceTypeLabel(config.serviceType)}
         </p>
       </footer>
 

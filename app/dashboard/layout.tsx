@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useRestaurantConfigStore } from '@/store/restaurantConfigStore';
 import { Button } from '@/components/ui/Button';
+import { getServiceTypeLabel } from '@/lib/utils/serviceType';
 
 export default function DashboardLayout({
   children,
@@ -124,7 +125,7 @@ export default function DashboardLayout({
         <div className="h-full max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center h-full">
             <p className="text-xs sm:text-sm text-gray-600 text-center">
-              © {new Date().getFullYear()} {displayName} - Sistema de Gerenciamento de Cardápio Digital
+              © {new Date().getFullYear()} {displayName} - Sistema de Gerenciamento de {getServiceTypeLabel(config?.serviceType)}
             </p>
           </div>
         </div>

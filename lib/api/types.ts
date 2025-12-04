@@ -24,6 +24,7 @@ export interface UserDto {
 
 export interface RestaurantConfigDto {
   restaurantName: string | null;
+  serviceType: 'Menu' | 'Catalog' | null;
   mainColor: string | null;
   logo: string | null;
   backgroundImage: string | null;
@@ -31,6 +32,7 @@ export interface RestaurantConfigDto {
   slug: string | null;
   tableOrderEnabled: boolean;
   whatsAppOrderEnabled: boolean;
+  whatsAppNumber: string | null;
   paymentMethods: string | null;
   address: string | null;
   about: string | null;
@@ -139,6 +141,7 @@ export interface UpdateProductDto {
 // ========== RESTAURANT ==========
 export interface UpdateRestaurantConfigDto {
   restaurantName?: string | null;
+  serviceType?: 'Menu' | 'Catalog' | null;
   mainColor?: string | null;
   logo?: string | null;
   backgroundImage?: string | null;
@@ -146,6 +149,7 @@ export interface UpdateRestaurantConfigDto {
   slug?: string | null;
   tableOrderEnabled?: boolean | null;
   whatsAppOrderEnabled?: boolean | null;
+  whatsAppNumber?: string | null;
   paymentMethods?: string | null;
   address?: string | null;
   about?: string | null;

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Switch } from '@/components/ui/Switch';
+import { Select } from '@/components/ui/Select';
 
 export default function ConfiguracoesPage() {
   const router = useRouter();
@@ -21,12 +22,14 @@ export default function ConfiguracoesPage() {
 
   const [formData, setFormData] = useState({
     restaurantName: '',
+    serviceType: 'Menu' as 'Menu' | 'Catalog',
     mainColor: '#ff0000',
     logo: null as string | null,
     backgroundImage: null as string | null,
     darkMode: false,
     tableOrderEnabled: false,
     whatsAppOrderEnabled: false,
+    whatsAppNumber: '',
     paymentMethods: '',
     address: '',
     openingHours: '',
@@ -45,12 +48,14 @@ export default function ConfiguracoesPage() {
         if (config) {
           setFormData({
             restaurantName: config.restaurantName || restaurantName || '',
+            serviceType: (config.serviceType as 'Menu' | 'Catalog') || 'Menu',
             mainColor: config.mainColor,
             logo: config.logo,
             backgroundImage: config.backgroundImage,
             darkMode: config.darkMode ?? false,
             tableOrderEnabled: config.tableOrderEnabled,
             whatsAppOrderEnabled: config.whatsAppOrderEnabled ?? false,
+            whatsAppNumber: config.whatsAppNumber || '',
             paymentMethods: config.paymentMethods || '',
             address: config.address || '',
             openingHours: config.openingHours || '',
@@ -60,12 +65,14 @@ export default function ConfiguracoesPage() {
           // Se não retornou config, usa valores padrão
           setFormData({
             restaurantName: restaurantName || '',
+            serviceType: 'Menu',
             mainColor: '#ff0000',
             logo: null,
             backgroundImage: null,
             darkMode: false,
             tableOrderEnabled: false,
             whatsAppOrderEnabled: false,
+            whatsAppNumber: '',
             paymentMethods: '',
             address: '',
             openingHours: '',
@@ -77,12 +84,14 @@ export default function ConfiguracoesPage() {
         // Se der erro, usa valores padrão
         setFormData({
           restaurantName: restaurantName || '',
+          serviceType: 'Menu',
           mainColor: '#ff0000',
           logo: null,
           backgroundImage: null,
           darkMode: false,
           tableOrderEnabled: false,
           whatsAppOrderEnabled: false,
+          whatsAppNumber: '',
           paymentMethods: '',
           address: '',
           openingHours: '',
@@ -116,12 +125,14 @@ export default function ConfiguracoesPage() {
       try {
       await updateConfig(restaurantId, {
         restaurantName: formData.restaurantName.trim(),
+        serviceType: formData.serviceType,
         mainColor: formData.mainColor,
         logo: formData.logo,
         backgroundImage: formData.backgroundImage,
         darkMode: formData.darkMode,
         tableOrderEnabled: formData.tableOrderEnabled,
         whatsAppOrderEnabled: formData.whatsAppOrderEnabled,
+        whatsAppNumber: formData.whatsAppNumber.trim() || null,
         paymentMethods: formData.paymentMethods.trim() || null,
         address: formData.address.trim() || null,
         openingHours: formData.openingHours.trim() || null,
@@ -134,12 +145,14 @@ export default function ConfiguracoesPage() {
       if (updatedConfig) {
         setFormData({
           restaurantName: updatedConfig.restaurantName || '',
+          serviceType: (updatedConfig.serviceType as 'Menu' | 'Catalog') || 'Menu',
           mainColor: updatedConfig.mainColor,
           logo: updatedConfig.logo,
           backgroundImage: updatedConfig.backgroundImage,
           darkMode: updatedConfig.darkMode ?? false,
           tableOrderEnabled: updatedConfig.tableOrderEnabled,
           whatsAppOrderEnabled: updatedConfig.whatsAppOrderEnabled ?? false,
+          whatsAppNumber: updatedConfig.whatsAppNumber || '',
           paymentMethods: updatedConfig.paymentMethods || '',
           address: updatedConfig.address || '',
           openingHours: updatedConfig.openingHours || '',
@@ -157,7 +170,7 @@ export default function ConfiguracoesPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -238,6 +251,17 @@ export default function ConfiguracoesPage() {
               required
             />
 
+            <Select
+              label="Tipo de Serviço"
+              name="serviceType"
+              value={formData.serviceType}
+              onChange={handleChange}
+              options={[
+                { value: 'Menu', label: 'Cardápio' },
+                { value: 'Catalog', label: 'Catálogo' },
+              ]}
+            />
+
             <ColorPicker
               label="Cor Principal"
               value={formData.mainColor}
@@ -284,6 +308,22 @@ export default function ConfiguracoesPage() {
               <p className="text-xs text-gray-500 mt-2">
                 Quando habilitado, os clientes poderão fazer pedidos através do WhatsApp
               </p>
+              {formData.whatsAppOrderEnabled && (
+                <div className="mt-4">
+                  <Input
+                    label="Número do WhatsApp *"
+                    name="whatsAppNumber"
+                    type="text"
+                    value={formData.whatsAppNumber}
+                    onChange={handleChange}
+                    placeholder="Ex: 5511999999999"
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Digite o número do WhatsApp com código do país e DDD (ex: 5511999999999)
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>

@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { restaurantService } from '@/lib/api/restaurantService';
+import { getServiceTypeLabel } from '@/lib/utils/serviceType';
 
 type Props = {
   params: Promise<{ restaurantId: string }>;
@@ -13,11 +14,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const menuData = await restaurantService.getPublicMenu(slug);
     const restaurant = menuData.restaurant;
     
-    const restaurantName = restaurant.restaurantName || 'Cardápio Digital';
+    const serviceLabel = getServiceTypeLabel(restaurant.serviceType);
+    const restaurantName = restaurant.restaurantName || serviceLabel;
 
     const metadata: Metadata = {
-      title: restaurantName + " - Cardápio Digital",
-      description: `Cardápio digital de ${restaurantName}`,
+      title: restaurantName + " - " + serviceLabel,
+      description: `${serviceLabel.toLowerCase()} de ${restaurantName}`,
     };
 
     return metadata;
