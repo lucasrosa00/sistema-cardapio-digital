@@ -67,10 +67,13 @@ export default function CardapioPublicoPage() {
   const setMenuInStore = useMenuStore((state) => state.setMenu);
   const getMenuFromStore = useMenuStore((state) => state.getMenu);
 
-  // Definir número da mesa e tableId no carrinho se fornecido
+  // Definir número da mesa e tableId no carrinho se fornecido (apenas para pedidos de mesa)
   useEffect(() => {
     if (tableNumber) {
       setTableNumberInCart(tableNumber);
+    } else {
+      // Limpar tableNumber do store se não for pedido de mesa
+      setTableNumberInCart(null);
     }
   }, [tableNumber, setTableNumberInCart]);
 
@@ -146,6 +149,8 @@ export default function CardapioPublicoPage() {
     about: menu.restaurant.about || null,
     openingHours: menu.restaurant.openingHours || null,
     mapUrl: menu.restaurant.mapUrl || null,
+    whatsAppOrderEnabled: menu.restaurant.whatsAppOrderEnabled || false,
+    whatsAppNumber: menu.restaurant.whatsAppNumber || null,
   } : {
     restaurantName: defaultServiceLabel,
     mainColor: '#ff0000',
@@ -158,6 +163,8 @@ export default function CardapioPublicoPage() {
     about: null,
     openingHours: null,
     mapUrl: null,
+    whatsAppOrderEnabled: false,
+    whatsAppNumber: null,
   };
 
   // Carregar menu público
@@ -174,7 +181,11 @@ export default function CardapioPublicoPage() {
           // Usar menu do cache se não houver tableNumber (menu de mesa pode ser diferente)
           currentMenuData = cachedMenu;
           setMenu(currentMenuData);
-          setAllowOrders(false);
+          // Verificar se pedidos via WhatsApp estão habilitados
+          setAllowOrders(currentMenuData.restaurant.whatsAppOrderEnabled || false);
+          // Limpar tableNumber do store quando não for pedido de mesa
+          setTableNumber(null);
+          setTableNumberInCart(null);
           setIsLoading(false);
           
           // Continuar com a lógica de seleção de categoria
@@ -228,7 +239,11 @@ export default function CardapioPublicoPage() {
             console.warn('Erro ao carregar menu da mesa, carregando menu normal:', tableError);
             currentMenuData = await restaurantService.getPublicMenu(slug);
             setMenu(currentMenuData);
-            setAllowOrders(false);
+            // Verificar se pedidos via WhatsApp estão habilitados
+            setAllowOrders(currentMenuData.restaurant.whatsAppOrderEnabled || false);
+            // Limpar tableNumber do store quando não for pedido de mesa
+            setTableNumber(null);
+            setTableNumberInCart(null);
             // Salvar menu no store para reutilização
             setMenuInStore(slug, currentMenuData);
           }
@@ -236,7 +251,11 @@ export default function CardapioPublicoPage() {
           // Carregar menu normal
           currentMenuData = await restaurantService.getPublicMenu(slug);
           setMenu(currentMenuData);
-          setAllowOrders(false);
+          // Verificar se pedidos via WhatsApp estão habilitados
+          setAllowOrders(currentMenuData.restaurant.whatsAppOrderEnabled || false);
+          // Limpar tableNumber do store quando não for pedido de mesa
+          setTableNumber(null);
+          setTableNumberInCart(null);
           // Salvar menu no store para reutilização
           setMenuInStore(slug, currentMenuData);
         }
@@ -461,7 +480,15 @@ export default function CardapioPublicoPage() {
       </footer>
 
       {/* Carrinho flutuante (apenas se pedidos estiverem habilitados) */}
-      {allowOrders && <ShoppingCart mainColor={config.mainColor} />}
+      {allowOrders && (
+        <ShoppingCart 
+          mainColor={config.mainColor}
+          whatsAppOrderEnabled={config.whatsAppOrderEnabled}
+          whatsAppNumber={config.whatsAppNumber}
+          restaurantName={config.restaurantName}
+          serviceType={config.serviceType}
+        />
+      )}
 
       {/* Botão flutuante para voltar ao topo */}
       {showScrollTop && (

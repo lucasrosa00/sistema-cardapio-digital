@@ -10,9 +10,19 @@ import { Button } from '@/components/ui/Button';
 
 interface ShoppingCartProps {
   mainColor: string;
+  whatsAppOrderEnabled?: boolean;
+  whatsAppNumber?: string | null;
+  restaurantName?: string;
+  serviceType?: 'Menu' | 'Catalog' | null;
 }
 
-export function ShoppingCart({ mainColor }: ShoppingCartProps) {
+export function ShoppingCart({ 
+  mainColor, 
+  whatsAppOrderEnabled = false, 
+  whatsAppNumber = null,
+  restaurantName = 'Restaurante',
+  serviceType = 'Menu'
+}: ShoppingCartProps) {
   const params = useParams();
   const slug = params.restaurantId as string;
   const [isOpen, setIsOpen] = useState(false);
@@ -27,11 +37,81 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
   const itemCount = getItemCount();
   const total = getTotal();
 
+  // Função para formatar mensagem do WhatsApp
+  const formatWhatsAppMessage = (customerName: string, observations: string) => {
+    let message = `*Pedido - ${restaurantName}*\n\n`;
+    message += `*Cliente:* ${customerName}\n\n`;
+    message += `*Itens do Pedido:*\n`;
+    
+    items.forEach((item, index) => {
+      message += `${index + 1}. ${item.productTitle}`;
+      if (item.variationLabel) {
+        message += ` (${item.variationLabel})`;
+      }
+      message += `\n   Quantidade: ${item.quantity}x\n`;
+      message += `   Valor unitário: R$ ${item.price.toFixed(2).replace('.', ',')}\n`;
+      message += `   Subtotal: R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}\n\n`;
+    });
+    
+    message += `*Total: R$ ${total.toFixed(2).replace('.', ',')}*\n\n`;
+    
+    if (observations.trim()) {
+      message += `*Observações:*\n${observations.trim()}\n\n`;
+    }
+    
+    message += `_Pedido realizado através do cardápio/catálogo digital_`;
+    
+    return encodeURIComponent(message);
+  };
+
+  // Função para enviar pedido via WhatsApp
+  const handleSubmitWhatsAppOrder = () => {
+    if (items.length === 0) {
+      alert('Selecione ao menos um item ao pedido.');
+      return;
+    }
+
+    if (!customerName.trim()) {
+      setCustomerNameError('Por favor, informe o nome do cliente.');
+      return;
+    }
+
+    if (!whatsAppNumber) {
+      alert('Número do WhatsApp não configurado. Entre em contato com o estabelecimento.');
+      return;
+    }
+
+    // Limpar erro se o nome estiver preenchido
+    setCustomerNameError('');
+
+    // Formatar número do WhatsApp (remover caracteres não numéricos, exceto +)
+    const cleanNumber = whatsAppNumber.replace(/[^\d+]/g, '');
+    const whatsappUrl = `https://wa.me/${cleanNumber}?text=${formatWhatsAppMessage(customerName.trim(), observations.trim())}`;
+    
+    // Abrir WhatsApp em nova aba
+    window.open(whatsappUrl, '_blank');
+    
+    // Limpar carrinho e fechar modal
+    clearCart();
+    setShowCheckoutForm(false);
+    setIsOpen(false);
+    setCustomerName('');
+    setObservations('');
+    setShowSuccessModal(true);
+  };
+
   const handleCheckout = () => {
     setShowCheckoutForm(true);
   };
 
   const handleSubmitOrder = async () => {
+    // Se for pedido via WhatsApp (sem mesa na URL), usar função específica
+    // Não usar tableNumber do store para pedidos via WhatsApp
+    if (whatsAppOrderEnabled) {
+      handleSubmitWhatsAppOrder();
+      return;
+    }
+
     if (items.length === 0) {
       alert('Selecione ao menos um item ao pedido.');
       return;
@@ -118,20 +198,37 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
         aria-label="Abrir pedido"
       >
         <div className="relative">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-8 w-8 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-            />
-          </svg>
+          {serviceType === 'Catalog' ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+              />
+            </svg>
+          )}
           {itemCount > 0 && (
             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
               {itemCount}
@@ -154,7 +251,7 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
               {/* Header */}
               <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
                 <h2 className="text-xl font-bold text-gray-900">
-                  Pedido {tableNumber && `- Mesa ${tableNumber}`}
+                  {tableNumber && !whatsAppOrderEnabled ? `Pedido - Mesa ${tableNumber}` : whatsAppOrderEnabled ? 'Pedido via WhatsApp' : 'Pedido'}
                 </h2>
                 <button
                   onClick={() => setIsOpen(false)}
@@ -313,7 +410,7 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
                       className="flex-1"
                       style={{ backgroundColor: mainColor }}
                     >
-                      Confirmar Pedido
+                      {whatsAppOrderEnabled ? 'Enviar via WhatsApp' : 'Confirmar Pedido'}
                     </Button>
                   </div>
                 </div>
@@ -359,7 +456,9 @@ export function ShoppingCart({ mainColor }: ShoppingCartProps) {
 
               {/* Mensagem */}
               <p className="text-gray-600 mb-6">
-                Seu pedido foi recebido com sucesso. Nossa equipe já está preparando e em breve será servido na sua mesa.
+                {whatsAppOrderEnabled 
+                  ? 'Seu pedido foi enviado via WhatsApp com sucesso! Aguarde o retorno do estabelecimento.'
+                  : 'Seu pedido foi recebido com sucesso. Nossa equipe já está preparando e em breve será servido na sua mesa.'}
               </p>
 
               {/* Botão de fechar */}

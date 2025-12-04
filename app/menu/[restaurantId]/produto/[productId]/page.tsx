@@ -81,12 +81,14 @@ export default function ProdutoDetalhesPage() {
                 menuData = await restaurantService.getPublicMenu(slug);
                 setMenuInStore(slug, menuData);
               }
-              canOrder = false;
+              // Verificar se pedidos via WhatsApp estão habilitados
+              canOrder = menuData?.restaurant.whatsAppOrderEnabled || false;
             }
           } else {
             // Sem mesa - carregar menu normal
             menuData = await restaurantService.getPublicMenu(slug);
-            canOrder = false;
+            // Verificar se pedidos via WhatsApp estão habilitados
+            canOrder = menuData.restaurant.whatsAppOrderEnabled || false;
             // Salvar menu no store para reutilização
             setMenuInStore(slug, menuData);
           }
@@ -99,7 +101,8 @@ export default function ProdutoDetalhesPage() {
         }
 
         setMenu(menuData);
-        setAllowOrders(canOrder);
+        // Verificar se pedidos via WhatsApp estão habilitados ou se é pedido de mesa
+        setAllowOrders(canOrder || (menuData.restaurant.whatsAppOrderEnabled || false));
 
         // Buscar produto em todas as categorias
         let foundProduct: Product | null = null;
@@ -179,6 +182,8 @@ export default function ProdutoDetalhesPage() {
     about: menu.restaurant.about || null,
     openingHours: menu.restaurant.openingHours || null,
     mapUrl: menu.restaurant.mapUrl || null,
+    whatsAppOrderEnabled: menu.restaurant.whatsAppOrderEnabled || false,
+    whatsAppNumber: menu.restaurant.whatsAppNumber || null,
   } : {
     restaurantName: defaultServiceLabel,
     mainColor: '#ff0000',
@@ -191,6 +196,8 @@ export default function ProdutoDetalhesPage() {
     about: null,
     openingHours: null,
     mapUrl: null,
+    whatsAppOrderEnabled: false,
+    whatsAppNumber: null,
   };
 
   const formatPrice = (price: number) => {
@@ -404,7 +411,15 @@ export default function ProdutoDetalhesPage() {
       </footer>
 
       {/* Carrinho flutuante (apenas se pedidos estiverem habilitados) */}
-      {allowOrders && <ShoppingCart mainColor={config.mainColor} />}
+      {allowOrders && (
+        <ShoppingCart 
+          mainColor={config.mainColor}
+          whatsAppOrderEnabled={config.whatsAppOrderEnabled}
+          whatsAppNumber={config.whatsAppNumber}
+          restaurantName={config.restaurantName}
+          serviceType={config.serviceType}
+        />
+      )}
     </div>
   );
 }
