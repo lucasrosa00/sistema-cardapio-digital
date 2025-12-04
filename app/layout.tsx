@@ -13,28 +13,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cardápio Digital - Transforme seu restaurante com tecnologia",
+  title: "Serviços - Transforme seu negócio com tecnologia",
   description:
-    "Cardápio digital completo para restaurantes, hamburguerias e lanchonetes. Rápido, fácil de editar e funciona em 3G/4G. Crie seu cardápio agora por apenas R$ 300/ano.",
+    "Serviços completo para restaurantes, hamburguerias, lanchonetes e lojas. Rápido, fácil de editar e funciona em 3G/4G. Crie seu cardápio ou catálogo agora por apenas R$ 300/ano.",
   openGraph: {
-    title: "Cardápio Digital - Transforme seu restaurante com tecnologia",
+    title: "Serviços - Transforme seu negócio com tecnologia",
     description:
-      "Cardápio digital completo para restaurantes, hamburguerias e lanchonetes. Rápido, fácil de editar e funciona em 3G/4G.",
+      "Serviços completo para restaurantes, hamburguerias, lanchonetes e lojas. Rápido, fácil de editar e funciona em 3G/4G.",
     type: "website",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Cardápio Digital",
+        alt: "Serviços",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Cardápio Digital - Transforme seu restaurante com tecnologia",
+    title: "Serviços - Transforme seu negócio com tecnologia",
     description:
-      "Cardápio digital completo para restaurantes, hamburguerias e lanchonetes. Rápido, fácil de editar e funciona em 3G/4G.",
+      "Serviços completo para restaurantes, hamburguerias, lanchonetes e lojas. Rápido, fácil de editar e funciona em 3G/4G.",
   },
 };
 
