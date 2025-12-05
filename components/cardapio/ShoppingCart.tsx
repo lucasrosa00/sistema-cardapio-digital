@@ -29,19 +29,28 @@ export function ShoppingCart({
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [observations, setObservations] = useState('');
+  const [deliveryType, setDeliveryType] = useState<'Entrega' | 'Retirada'>('Retirada');
+  const [address, setAddress] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerNameError, setCustomerNameError] = useState('');
+  const [addressError, setAddressError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const { items, removeItem, updateQuantity, getTotal, getItemCount, clearCart, tableNumber, tableId } = useCartStore();
 
   const itemCount = getItemCount();
-  const total = getTotal();
+  const subtotal = getTotal();
+  const deliveryFee = 7.00;
+  const total = deliveryType === 'Entrega' ? subtotal + deliveryFee : subtotal;
 
   // Função para formatar mensagem do WhatsApp
   const formatWhatsAppMessage = (customerName: string, observations: string) => {
     let message = `*Pedido - ${restaurantName}*\n\n`;
     message += `*Cliente:* ${customerName}\n\n`;
-    message += `*Itens do Pedido:*\n`;
+    message += `*Tipo de Entrega:* ${deliveryType}\n`;
+    if (deliveryType === 'Entrega' && address.trim()) {
+      message += `*Endereço:* ${address.trim()}\n`;
+    }
+    message += `\n*Itens do Pedido:*\n`;
     
     items.forEach((item, index) => {
       message += `${index + 1}. ${item.productTitle}`;
@@ -53,13 +62,18 @@ export function ShoppingCart({
       message += `   Subtotal: R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}\n\n`;
     });
     
+    message += `*Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}*\n`;
+    if (deliveryType === 'Entrega') {
+      message += `*Taxa de Entrega: R$ ${deliveryFee.toFixed(2).replace('.', ',')}*\n`;
+    }
     message += `*Total: R$ ${total.toFixed(2).replace('.', ',')}*\n\n`;
     
     if (observations.trim()) {
       message += `*Observações:*\n${observations.trim()}\n\n`;
     }
     
-    message += `_Pedido realizado através do cardápio/catálogo digital_`;
+    const serviceTypeText = serviceType === 'Catalog' ? 'catálogo' : 'cardápio';
+    message += `_Pedido realizado através do ${serviceTypeText} digital_`;
     
     return encodeURIComponent(message);
   };
@@ -76,13 +90,19 @@ export function ShoppingCart({
       return;
     }
 
+    if (deliveryType === 'Entrega' && !address.trim()) {
+      setAddressError('Por favor, informe o endereço de entrega.');
+      return;
+    }
+
     if (!whatsAppNumber) {
       alert('Número do WhatsApp não configurado. Entre em contato com o estabelecimento.');
       return;
     }
 
-    // Limpar erro se o nome estiver preenchido
+    // Limpar erros
     setCustomerNameError('');
+    setAddressError('');
 
     // Formatar número do WhatsApp (remover caracteres não numéricos, exceto +)
     const cleanNumber = whatsAppNumber.replace(/[^\d+]/g, '');
@@ -97,6 +117,8 @@ export function ShoppingCart({
     setIsOpen(false);
     setCustomerName('');
     setObservations('');
+    setDeliveryType('Retirada');
+    setAddress('');
     setShowSuccessModal(true);
   };
 
@@ -126,9 +148,15 @@ export function ShoppingCart({
       setCustomerNameError('Por favor, informe o nome do cliente.');
       return;
     }
+
+    if (deliveryType === 'Entrega' && !address.trim()) {
+      setAddressError('Por favor, informe o endereço de entrega.');
+      return;
+    }
     
-    // Limpar erro se o nome estiver preenchido
+    // Limpar erros
     setCustomerNameError('');
+    setAddressError('');
 
     setIsSubmitting(true);
     try {
@@ -178,6 +206,8 @@ export function ShoppingCart({
       setIsOpen(false);
       setCustomerName('');
       setObservations('');
+      setDeliveryType('Retirada');
+      setAddress('');
       setShowSuccessModal(true);
     } catch (error: any) {
       console.error('Erro ao realizar pedido:', error);
@@ -337,11 +367,27 @@ export function ShoppingCart({
               {/* Footer com total e botão de checkout */}
               {items.length > 0 && !showCheckoutForm && (
                 <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-lg font-semibold text-gray-900">Total:</span>
-                    <span className="text-xl font-bold" style={{ color: mainColor }}>
-                      R$ {total.toFixed(2).replace('.', ',')}
-                    </span>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Subtotal:</span>
+                      <span className="text-sm text-gray-600">
+                        R$ {subtotal.toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+                    {deliveryType === 'Entrega' && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Taxa de Entrega:</span>
+                        <span className="text-sm text-gray-600">
+                          R$ {deliveryFee.toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                      <span className="text-lg font-semibold text-gray-900">Total:</span>
+                      <span className="text-xl font-bold" style={{ color: mainColor }}>
+                        R$ {total.toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
                   </div>
                   <button
                     onClick={handleCheckout}
@@ -378,6 +424,52 @@ export function ShoppingCart({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tipo de Entrega <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="deliveryType"
+                      value={deliveryType}
+                      onChange={(e) => {
+                        setDeliveryType(e.target.value as 'Entrega' | 'Retirada');
+                        // Limpar endereço e erro quando mudar para retirada
+                        if (e.target.value === 'Retirada') {
+                          setAddress('');
+                          setAddressError('');
+                        }
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Retirada">Retirada</option>
+                      <option value="Entrega">Entrega</option>
+                    </select>
+                  </div>
+                  {deliveryType === 'Entrega' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Endereço de Entrega <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        name="address"
+                        value={address}
+                        onChange={(e) => {
+                          setAddress(e.target.value);
+                          // Limpar erro quando o usuário começar a digitar
+                          if (addressError) {
+                            setAddressError('');
+                          }
+                        }}
+                        placeholder="Rua, número, bairro, complemento..."
+                        rows={3}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                      {addressError && (
+                        <p className="mt-1 text-sm text-red-600">{addressError}</p>
+                      )}
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Observações (opcional)
                     </label>
                     <textarea
@@ -389,11 +481,27 @@ export function ShoppingCart({
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <div className="flex justify-between items-center pt-2">
-                    <span className="text-lg font-semibold text-gray-900">Total:</span>
-                    <span className="text-xl font-bold" style={{ color: mainColor }}>
-                      R$ {total.toFixed(2).replace('.', ',')}
-                    </span>
+                  <div className="space-y-2 pt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Subtotal:</span>
+                      <span className="text-sm text-gray-600">
+                        R$ {subtotal.toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+                    {deliveryType === 'Entrega' && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Taxa de Entrega:</span>
+                        <span className="text-sm text-gray-600">
+                          R$ {deliveryFee.toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                      <span className="text-lg font-semibold text-gray-900">Total:</span>
+                      <span className="text-xl font-bold" style={{ color: mainColor }}>
+                        R$ {total.toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button
