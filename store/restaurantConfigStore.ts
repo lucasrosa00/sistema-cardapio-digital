@@ -17,6 +17,7 @@ export interface RestaurantConfig {
   about: string | null;
   openingHours: string | null;
   mapUrl: string | null;
+  deliveryFee: number;
 }
 
 // Função helper para converter RestaurantConfigDto para RestaurantConfig
@@ -35,6 +36,7 @@ const dtoToConfig = (dto: RestaurantConfigDto): RestaurantConfig => ({
   about: dto.about && dto.about.trim() !== '' ? dto.about : null,
   openingHours: dto.openingHours && dto.openingHours.trim() !== '' ? dto.openingHours : null,
   mapUrl: dto.mapUrl && dto.mapUrl.trim() !== '' ? dto.mapUrl : null,
+  deliveryFee: dto.deliveryFee ?? 0,
 });
 
 interface RestaurantConfigState {
@@ -92,6 +94,7 @@ export const useRestaurantConfigStore = create<RestaurantConfigState>()((set, ge
         about: updates.about !== undefined ? updates.about : undefined,
         openingHours: updates.openingHours !== undefined ? updates.openingHours : undefined,
         mapUrl: updates.mapUrl !== undefined ? updates.mapUrl : undefined,
+        deliveryFee: updates.deliveryFee !== undefined ? updates.deliveryFee : undefined,
       });
       const updatedConfig = dtoToConfig(updatedConfigDto);
       // Atualiza no store

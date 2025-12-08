@@ -14,6 +14,7 @@ interface ShoppingCartProps {
   whatsAppNumber?: string | null;
   restaurantName?: string;
   serviceType?: 'Menu' | 'Catalog' | null;
+  deliveryFee?: number;
 }
 
 export function ShoppingCart({ 
@@ -21,7 +22,8 @@ export function ShoppingCart({
   whatsAppOrderEnabled = false, 
   whatsAppNumber = null,
   restaurantName = 'Restaurante',
-  serviceType = 'Menu'
+  serviceType = 'Menu',
+  deliveryFee = 0
 }: ShoppingCartProps) {
   const params = useParams();
   const slug = params.restaurantId as string;
@@ -39,7 +41,6 @@ export function ShoppingCart({
 
   const itemCount = getItemCount();
   const subtotal = getTotal();
-  const deliveryFee = 7.00;
   const total = deliveryType === 'Entrega' ? subtotal + deliveryFee : subtotal;
 
   // Função para formatar mensagem do WhatsApp
@@ -64,7 +65,11 @@ export function ShoppingCart({
     
     message += `*Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}*\n`;
     if (deliveryType === 'Entrega') {
-      message += `*Taxa de Entrega: R$ ${deliveryFee.toFixed(2).replace('.', ',')}*\n`;
+      if (deliveryFee === 0) {
+        message += `*Taxa de Entrega: Grátis*\n`;
+      } else {
+        message += `*Taxa de Entrega: R$ ${deliveryFee.toFixed(2).replace('.', ',')}*\n`;
+      }
     }
     message += `*Total: R$ ${total.toFixed(2).replace('.', ',')}*\n\n`;
     
@@ -377,9 +382,15 @@ export function ShoppingCart({
                     {deliveryType === 'Entrega' && (
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Taxa de Entrega:</span>
-                        <span className="text-sm text-gray-600">
-                          R$ {deliveryFee.toFixed(2).replace('.', ',')}
-                        </span>
+                        {deliveryFee === 0 ? (
+                          <span className="text-sm font-semibold text-green-600">
+                            Grátis
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-600">
+                            R$ {deliveryFee.toFixed(2).replace('.', ',')}
+                          </span>
+                        )}
                       </div>
                     )}
                     <div className="flex justify-between items-center pt-2 border-t border-gray-200">
@@ -491,9 +502,15 @@ export function ShoppingCart({
                     {deliveryType === 'Entrega' && (
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Taxa de Entrega:</span>
-                        <span className="text-sm text-gray-600">
-                          R$ {deliveryFee.toFixed(2).replace('.', ',')}
-                        </span>
+                        {deliveryFee === 0 ? (
+                          <span className="text-sm font-semibold text-green-600">
+                            Grátis
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-600">
+                            R$ {deliveryFee.toFixed(2).replace('.', ',')}
+                          </span>
+                        )}
                       </div>
                     )}
                     <div className="flex justify-between items-center pt-2 border-t border-gray-200">

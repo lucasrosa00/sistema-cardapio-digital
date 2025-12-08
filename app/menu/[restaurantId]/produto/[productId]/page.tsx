@@ -184,6 +184,7 @@ export default function ProdutoDetalhesPage() {
     mapUrl: menu.restaurant.mapUrl || null,
     whatsAppOrderEnabled: menu.restaurant.whatsAppOrderEnabled || false,
     whatsAppNumber: menu.restaurant.whatsAppNumber || null,
+    deliveryFee: menu.restaurant.deliveryFee ?? 0,
   } : {
     restaurantName: defaultServiceLabel,
     mainColor: '#ff0000',
@@ -198,6 +199,7 @@ export default function ProdutoDetalhesPage() {
     mapUrl: null,
     whatsAppOrderEnabled: false,
     whatsAppNumber: null,
+    deliveryFee: 0,
   };
 
   const formatPrice = (price: number) => {
@@ -418,6 +420,7 @@ export default function ProdutoDetalhesPage() {
           whatsAppNumber={config.whatsAppNumber}
           restaurantName={config.restaurantName}
           serviceType={config.serviceType}
+          deliveryFee={config.deliveryFee}
         />
       )}
     </div>

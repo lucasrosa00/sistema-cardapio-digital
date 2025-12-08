@@ -151,6 +151,7 @@ export default function CardapioPublicoPage() {
     mapUrl: menu.restaurant.mapUrl || null,
     whatsAppOrderEnabled: menu.restaurant.whatsAppOrderEnabled || false,
     whatsAppNumber: menu.restaurant.whatsAppNumber || null,
+    deliveryFee: menu.restaurant.deliveryFee ?? 0,
   } : {
     restaurantName: defaultServiceLabel,
     mainColor: '#ff0000',
@@ -165,6 +166,7 @@ export default function CardapioPublicoPage() {
     mapUrl: null,
     whatsAppOrderEnabled: false,
     whatsAppNumber: null,
+    deliveryFee: 0,
   };
 
   // Carregar menu público
@@ -487,6 +489,7 @@ export default function CardapioPublicoPage() {
           whatsAppNumber={config.whatsAppNumber}
           restaurantName={config.restaurantName}
           serviceType={config.serviceType}
+          deliveryFee={config.deliveryFee}
         />
       )}
 

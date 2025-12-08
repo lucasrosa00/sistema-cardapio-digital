@@ -34,6 +34,7 @@ export default function ConfiguracoesPage() {
     address: '',
     openingHours: '',
     mapUrl: '',
+    deliveryFee: 0,
   });
 
   const [errors, setErrors] = useState<{ restaurantName?: string }>({});
@@ -60,6 +61,7 @@ export default function ConfiguracoesPage() {
             address: config.address || '',
             openingHours: config.openingHours || '',
             mapUrl: config.mapUrl || '',
+            deliveryFee: config.deliveryFee ?? 0,
           });
         } else {
           // Se não retornou config, usa valores padrão
@@ -77,6 +79,7 @@ export default function ConfiguracoesPage() {
             address: '',
             openingHours: '',
             mapUrl: '',
+            deliveryFee: 0,
           });
         }
       }).catch((error) => {
@@ -96,6 +99,7 @@ export default function ConfiguracoesPage() {
           address: '',
           openingHours: '',
           mapUrl: '',
+          deliveryFee: 0,
         });
       });
     }
@@ -137,6 +141,7 @@ export default function ConfiguracoesPage() {
         address: formData.address.trim() || null,
         openingHours: formData.openingHours.trim() || null,
         mapUrl: formData.mapUrl.trim() || null,
+        deliveryFee: formData.deliveryFee,
       });
 
       // Recarrega as configurações da API para garantir sincronização
@@ -157,6 +162,7 @@ export default function ConfiguracoesPage() {
           address: updatedConfig.address || '',
           openingHours: updatedConfig.openingHours || '',
           mapUrl: updatedConfig.mapUrl || '',
+          deliveryFee: updatedConfig.deliveryFee ?? 0,
         });
       }
 
@@ -309,7 +315,7 @@ export default function ConfiguracoesPage() {
                 Quando habilitado, os clientes poderão fazer pedidos através do WhatsApp
               </p>
               {formData.whatsAppOrderEnabled && (
-                <div className="mt-4">
+                <div className="mt-4 space-y-4">
                   <Input
                     label="Número do WhatsApp *"
                     name="whatsAppNumber"
@@ -322,6 +328,27 @@ export default function ConfiguracoesPage() {
                   <p className="text-xs text-gray-500 mt-1">
                     Digite o número do WhatsApp com código do país e DDD (ex: 5511999999999)
                   </p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Taxa de Entrega (R$)
+                    </label>
+                    <input
+                      type="number"
+                      name="deliveryFee"
+                      value={formData.deliveryFee}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value) || 0;
+                        setFormData((prev) => ({ ...prev, deliveryFee: value }));
+                      }}
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Valor da taxa de entrega. Use 0 para entrega grátis.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
