@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:fast": "SKIP_ENV_VALIDATION=true next build",
+    "build:deploy": "npm run build && echo Build concluído! Transfira a pasta .next para o servidor.",
     "start": "next start",
     "lint": "eslint"
   },
