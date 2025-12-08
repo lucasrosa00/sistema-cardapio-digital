@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 export default function Hero() {
     return (
         <section className="pt-32 pb-20 md:pt-40 md:pb-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-yellow-50 via-orange-50/50 to-white">
@@ -37,13 +35,10 @@ export default function Hero() {
                     {/* Mockup */}
                     <div className="flex justify-center md:justify-end">
                         <div className="relative w-full max-w-lg">
-                            <Image
+                            <img
                                 src="/uploads/cardapio.png"
                                 alt="Mockup do Cardápio Digital"
-                                width={600}
-                                height={1080}
                                 className="w-full h-auto rounded-2xl"
-                                priority
                             />
                         </div>
                     </div>
