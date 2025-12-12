@@ -13,6 +13,7 @@ import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { ProductVariations } from '@/components/ui/ProductVariations';
+import { ProductAddonsManager } from '@/components/ui/ProductAddonsManager';
 
 export default function CadastrarProdutoPage() {
   const router = useRouter();
@@ -204,11 +205,15 @@ export default function CadastrarProdutoPage() {
       // Criar produto primeiro
       const createdProduct = await addProduct(productData, restaurantId);
 
+      // Vincular adicionais ao produto (apenas os que foram criados com productIds)
+      // A vinculação já é feita automaticamente quando o adicional é criado com productIds
+      // Não precisamos fazer nada adicional aqui
+
       // Fazer upload das imagens se houver arquivos selecionados
       if (imageFiles.length > 0 && createdProduct?.id) {
         try {
           const { productsService } = await import('@/lib/api/productsService');
-          
+
           // Upload de cada imagem
           for (const file of imageFiles) {
             await productsService.uploadImage(createdProduct.id, file);
@@ -403,6 +408,14 @@ export default function CadastrarProdutoPage() {
                 maxImages={10}
               />
             </div>
+
+            <ProductAddonsManager
+              productId={null}
+              selectedAddonIds={[]}
+              onChange={() => { }}
+              restaurantId={restaurantId!}
+              showSelection={false}
+            />
 
             <Select
               label="Ordem *"

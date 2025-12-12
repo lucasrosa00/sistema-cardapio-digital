@@ -13,6 +13,7 @@ import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { ProductVariations } from '@/components/ui/ProductVariations';
+import { ProductAddonsManager } from '@/components/ui/ProductAddonsManager';
 
 export default function EditarProdutoPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function EditarProdutoPage() {
   const id = Number(params.id);
   
   const restaurantId = useAuthStore((state) => state.restaurantId);
-  const { getProductsByRestaurant, loadProducts } = useProductsStore();
+  const { getProductsByRestaurant, loadProducts, isLoading: isLoadingProducts } = useProductsStore();
   const updateProduct = useProductsStore((state) => state.updateProduct);
   const { getCategoriesByRestaurant, loadCategories } = useCategoriesStore();
   const { getSubcategoriesByRestaurant, loadSubcategories } = useSubcategoriesStore();
@@ -29,19 +30,27 @@ export default function EditarProdutoPage() {
   const categories = restaurantId ? getCategoriesByRestaurant(restaurantId) : [];
   const subcategories = restaurantId ? getSubcategoriesByRestaurant(restaurantId) : [];
   const product = products.find((prod) => prod.id === id);
+  
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Carregar produtos, categorias e subcategorias ao montar o componente
   useEffect(() => {
     if (restaurantId) {
-      loadProducts().catch((error) => {
-        console.error('Erro ao carregar produtos:', error);
+      Promise.all([
+        loadProducts().catch((error) => {
+          console.error('Erro ao carregar produtos:', error);
+        }),
+        loadCategories().catch((error) => {
+          console.error('Erro ao carregar categorias:', error);
+        }),
+        loadSubcategories().catch((error) => {
+          console.error('Erro ao carregar subcategorias:', error);
+        }),
+      ]).finally(() => {
+        setIsInitialLoad(false);
       });
-      loadCategories().catch((error) => {
-        console.error('Erro ao carregar categorias:', error);
-      });
-      loadSubcategories().catch((error) => {
-        console.error('Erro ao carregar subcategorias:', error);
-      });
+    } else {
+      setIsInitialLoad(false);
     }
   }, [restaurantId, loadProducts, loadCategories, loadSubcategories]);
 
@@ -215,6 +224,9 @@ export default function EditarProdutoPage() {
 
       await updateProduct(id, productData);
 
+      // A vinculação de adicionais é feita automaticamente quando o adicional é criado/editado
+      // com productIds ou categoryIds. Não precisamos fazer nada adicional aqui.
+
       // Fazer upload das novas imagens se houver arquivos selecionados
       if (imageFiles.length > 0) {
         try {
@@ -265,6 +277,23 @@ export default function EditarProdutoPage() {
     }
   };
 
+  // Mostrar loader enquanto está carregando
+  if (isInitialLoad || isLoadingProducts) {
+    return (
+      <div className="bg-gray-50 min-h-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+              <p className="text-gray-600">Carregando produto...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar "não encontrado" apenas após o carregamento
   if (!product) {
     return (
       <div className="bg-gray-50 min-h-full">
@@ -435,6 +464,14 @@ export default function EditarProdutoPage() {
                 maxImages={10}
               />
             </div>
+
+            <ProductAddonsManager
+              productId={id}
+              selectedAddonIds={[]}
+              onChange={() => {}}
+              restaurantId={restaurantId!}
+              showSelection={false}
+            />
 
             <Select
               label="Ordem *"

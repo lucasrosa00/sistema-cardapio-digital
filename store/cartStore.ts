@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export interface CartItemAddon {
+  productAddonId: number;
+  name: string;
+  extraPrice: number;
+  quantity: number;
+}
+
 export interface CartItem {
   productId: number;
   productTitle: string;
@@ -8,6 +15,7 @@ export interface CartItem {
   quantity: number;
   variationLabel?: string;
   image?: string;
+  addons?: CartItemAddon[];
 }
 
 interface CartState {
@@ -15,14 +23,29 @@ interface CartState {
   tableNumber: string | null;
   tableId: number | null;
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
-  removeItem: (productId: number, variationLabel?: string) => void;
-  updateQuantity: (productId: number, quantity: number, variationLabel?: string) => void;
+  removeItem: (productId: number, variationLabel?: string, addons?: CartItemAddon[]) => void;
+  updateQuantity: (productId: number, quantity: number, variationLabel?: string, addons?: CartItemAddon[]) => void;
   clearCart: () => void;
   setTableNumber: (tableNumber: string | null) => void;
   setTableId: (tableId: number | null) => void;
   getTotal: () => number;
   getItemCount: () => number;
 }
+
+// Função auxiliar para criar chave única de um item do carrinho
+const createItemKey = (item: { productId: number; variationLabel?: string; addons?: CartItemAddon[] }): string => {
+  // Normalizar addons: undefined ou [] vira string vazia, senão ordena e cria chave
+  const normalizedAddons = item.addons && item.addons.length > 0 ? item.addons : [];
+  const addonsKey = normalizedAddons
+    .map(a => {
+      // Usar productAddonId se disponível, senão usar addonId (campo auxiliar) ou 0
+      const addonId = a.productAddonId || (a as any).addonId || 0;
+      return `${addonId}:${a.quantity}`;
+    })
+    .sort()
+    .join(',');
+  return `${item.productId}-${item.variationLabel || 'unique'}-${addonsKey}`;
+};
 
 export const useCartStore = create<CartState>()(
   persist(
@@ -33,8 +56,15 @@ export const useCartStore = create<CartState>()(
 
       addItem: (item) => {
         const items = get().items;
+        // Normalizar addons para garantir comparação consistente
+        const normalizedItem = {
+          ...item,
+          addons: item.addons && item.addons.length > 0 ? item.addons : undefined,
+        };
+        const newItemKey = createItemKey(normalizedItem as CartItem);
+        
         const existingItemIndex = items.findIndex(
-          (i) => i.productId === item.productId && i.variationLabel === item.variationLabel
+          (i) => createItemKey(i) === newItemKey
         );
 
         if (existingItemIndex >= 0) {
@@ -44,27 +74,40 @@ export const useCartStore = create<CartState>()(
           set({ items: updatedItems });
         } else {
           // Novo item
-          set({ items: [...items, { ...item, quantity: 1 }] });
+          set({ items: [...items, { ...normalizedItem, quantity: 1 }] });
         }
       },
 
-      removeItem: (productId, variationLabel) => {
+      removeItem: (productId, variationLabel, addons?: CartItemAddon[]) => {
+        const items = get().items;
+        const targetKey = createItemKey({ 
+          productId, 
+          variationLabel, 
+          addons: addons || []
+        });
+        
         set({
-          items: get().items.filter(
-            (item) => !(item.productId === productId && item.variationLabel === variationLabel)
+          items: items.filter(
+            (item) => createItemKey(item) !== targetKey
           ),
         });
       },
 
-      updateQuantity: (productId, quantity, variationLabel) => {
+      updateQuantity: (productId, quantity, variationLabel, addons?: CartItemAddon[]) => {
         if (quantity <= 0) {
-          get().removeItem(productId, variationLabel);
+          get().removeItem(productId, variationLabel, addons);
           return;
         }
 
         const items = get().items;
+        const targetKey = createItemKey({ 
+          productId, 
+          variationLabel, 
+          addons: addons || []
+        });
+        
         const existingItemIndex = items.findIndex(
-          (i) => i.productId === productId && i.variationLabel === variationLabel
+          (i) => createItemKey(i) === targetKey
         );
 
         if (existingItemIndex >= 0) {
@@ -87,7 +130,13 @@ export const useCartStore = create<CartState>()(
       },
 
       getTotal: () => {
-        return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
+        return get().items.reduce((total, item) => {
+          const itemBasePrice = item.price * item.quantity;
+          const addonsPrice = item.addons?.reduce((addonTotal, addon) => {
+            return addonTotal + (addon.extraPrice * addon.quantity * item.quantity);
+          }, 0) || 0;
+          return total + itemBasePrice + addonsPrice;
+        }, 0);
       },
 
       getItemCount: () => {

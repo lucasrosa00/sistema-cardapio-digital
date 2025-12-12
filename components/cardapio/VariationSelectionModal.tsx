@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { ProductAddons } from '@/components/ui/ProductAddons';
+import type { ProductAddonDto } from '@/lib/api/types';
+import type { CartItemAddon } from '@/store/cartStore';
 
 interface Variation {
   label: string;
@@ -14,7 +17,10 @@ interface VariationSelectionModalProps {
   productTitle: string;
   variations: Variation[];
   mainColor: string;
-  onSelectVariation: (variation: Variation) => void;
+  darkMode?: boolean;
+  availableAddons?: ProductAddonDto[];
+  allowSelection?: boolean;
+  onSelectVariation: (variation: Variation, addons?: CartItemAddon[]) => void;
 }
 
 export function VariationSelectionModal({
@@ -23,18 +29,29 @@ export function VariationSelectionModal({
   productTitle,
   variations,
   mainColor,
+  darkMode = false,
+  availableAddons = [],
+  allowSelection = false,
   onSelectVariation,
 }: VariationSelectionModalProps) {
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(null);
+  const [selectedAddons, setSelectedAddons] = useState<CartItemAddon[]>([]);
 
   if (!isOpen) return null;
 
   const handleConfirm = () => {
     if (selectedVariation) {
-      onSelectVariation(selectedVariation);
+      onSelectVariation(selectedVariation, selectedAddons.length > 0 ? selectedAddons : undefined);
       setSelectedVariation(null);
+      setSelectedAddons([]);
       onClose();
     }
+  };
+
+  const handleClose = () => {
+    setSelectedVariation(null);
+    setSelectedAddons([]);
+    onClose();
   };
 
   const formatPrice = (price: number) => {
@@ -85,11 +102,25 @@ export function VariationSelectionModal({
             ))}
           </div>
 
+          {/* Adicionais */}
+          {availableAddons && availableAddons.length > 0 && (
+            <div className="px-6 py-4 border-t border-gray-200">
+              <ProductAddons
+                addons={availableAddons}
+                allowSelection={allowSelection}
+                mainColor={mainColor}
+                darkMode={darkMode}
+                selectedAddons={selectedAddons}
+                onAddonsChange={setSelectedAddons}
+              />
+            </div>
+          )}
+
           {/* Footer */}
           <div className="px-6 py-4 border-t border-gray-200 flex gap-2">
             <Button
               variant="secondary"
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1"
             >
               Cancelar

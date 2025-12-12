@@ -45,6 +45,14 @@ type Product = {
   images?: string[];
   active: boolean;
   order: number;
+  availableAddons?: Array<{
+    id: number;
+    productAddonId: number;
+    name: string | null;
+    description: string | null;
+    extraPrice: number;
+    active: boolean;
+  }>;
 };
 
 export default function CardapioPublicoPage() {
@@ -61,6 +69,7 @@ export default function CardapioPublicoPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [allowOrders, setAllowOrders] = useState(false);
   const [tableNumber, setTableNumber] = useState(tableNumberFromUrl || null);
+  const [productsWithAddons, setProductsWithAddons] = useState<Product[]>([]);
 
   const setTableNumberInCart = useCartStore((state) => state.setTableNumber);
   const setTableIdInCart = useCartStore((state) => state.setTableId);
@@ -97,7 +106,8 @@ export default function CardapioPublicoPage() {
     })) || []
   ) || [];
 
-  const products: Product[] = menu?.categories?.flatMap(cat => {
+  // Converter produtos do menu
+  const productsFromMenu: Product[] = menu?.categories?.flatMap(cat => {
     // Produtos das subcategorias
     const subcategoryProducts = cat.subcategories?.flatMap(sub =>
       (sub.products || []).map(prod => ({
@@ -113,6 +123,7 @@ export default function CardapioPublicoPage() {
         images: prod.images || [],
         active: prod.active,
         order: prod.order,
+        availableAddons: prod.availableAddons || [],
       })) || []
     ) || [];
 
@@ -130,11 +141,15 @@ export default function CardapioPublicoPage() {
       images: prod.images || [],
       active: prod.active,
       order: prod.order,
+      availableAddons: prod.availableAddons || [],
     }));
 
     // Combinar produtos de subcategorias e da categoria
     return [...subcategoryProducts, ...categoryProducts];
   }) || [];
+
+  // Usar produtos com adicionais carregados ou produtos do menu
+  const products = productsWithAddons.length > 0 ? productsWithAddons : productsFromMenu;
 
   const defaultServiceLabel = getServiceTypeLabel(menu?.restaurant?.serviceType);
   const config = menu?.restaurant ? {
@@ -169,6 +184,75 @@ export default function CardapioPublicoPage() {
     deliveryFee: 0,
   };
 
+  // Função auxiliar para buscar adicionais dos produtos
+  const loadAddonsForProducts = async (menuData: PublicMenuDto): Promise<Product[]> => {
+    const productsToLoadAddons: Product[] = menuData.categories?.flatMap(cat => {
+      const subcategoryProducts = cat.subcategories?.flatMap(sub =>
+        (sub.products || []).map(prod => ({
+          id: prod.id,
+          restaurantId: prod.restaurantId,
+          categoryId: prod.categoryId,
+          subcategoryId: prod.subcategoryId || sub.subcategory.id,
+          title: prod.title || '',
+          description: prod.description || '',
+          priceType: (prod.priceType as 'unique' | 'variable') || 'unique',
+          price: prod.price || undefined,
+          variations: prod.variations?.map(v => ({ label: v.label || '', price: v.price })),
+          images: prod.images || [],
+          active: prod.active,
+          order: prod.order,
+          availableAddons: prod.availableAddons || [],
+        })) || []
+      ) || [];
+
+      const categoryProducts = (cat.products || []).map(prod => ({
+        id: prod.id,
+        restaurantId: prod.restaurantId,
+        categoryId: prod.categoryId,
+        subcategoryId: prod.subcategoryId || 0,
+        title: prod.title || '',
+        description: prod.description || '',
+        priceType: (prod.priceType as 'unique' | 'variable') || 'unique',
+        price: prod.price || undefined,
+        variations: prod.variations?.map(v => ({ label: v.label || '', price: v.price })),
+        images: prod.images || [],
+        active: prod.active,
+        order: prod.order,
+        availableAddons: prod.availableAddons || [],
+      }));
+
+      return [...subcategoryProducts, ...categoryProducts];
+    }) || [];
+
+    // Buscar adicionais para produtos que não têm
+    const productsWithAddonsLoaded = await Promise.all(
+      productsToLoadAddons.map(async (product) => {
+        // Sempre buscar adicionais diretamente da API para garantir que temos apenas os vinculados a este produto
+        try {
+          const { addonsService } = await import('@/lib/api/addonsService');
+          const productAddons = await addonsService.getByProduct(product.id);
+          // Se já tem adicionais no menu e a API retornou os mesmos, usar os do menu
+          // Caso contrário, usar os da API (que são sempre corretos)
+          if (productAddons && productAddons.length > 0) {
+            return {
+              ...product,
+              availableAddons: productAddons,
+            };
+          }
+          // Se não tem adicionais na API, manter os do menu (se houver) ou vazio
+          return product;
+        } catch (addonError) {
+          console.error(`Erro ao buscar adicionais do produto ${product.id}:`, addonError);
+          // Em caso de erro, manter os adicionais do menu (se houver)
+          return product;
+        }
+      })
+    );
+
+    console.log('Produtos com adicionais carregados:', productsWithAddonsLoaded.filter(p => p.availableAddons && p.availableAddons.length > 0).length);
+    return productsWithAddonsLoaded;
+  };
+
   // Carregar menu público
   useEffect(() => {
     const loadMenu = async () => {
@@ -188,6 +272,11 @@ export default function CardapioPublicoPage() {
           // Limpar tableNumber do store quando não for pedido de mesa
           setTableNumber(null);
           setTableNumberInCart(null);
+          
+          // Buscar adicionais para produtos
+          const productsWithAddons = await loadAddonsForProducts(currentMenuData);
+          setProductsWithAddons(productsWithAddons);
+          
           setIsLoading(false);
           
           // Continuar com a lógica de seleção de categoria
@@ -236,6 +325,9 @@ export default function CardapioPublicoPage() {
               const publicMenu = await restaurantService.getPublicMenu(slug);
               setMenuInStore(slug, publicMenu);
             }
+            // Buscar adicionais para produtos do menu da mesa
+            const productsWithAddons = await loadAddonsForProducts(currentMenuData);
+            setProductsWithAddons(productsWithAddons);
           } catch (tableError) {
             // Se falhar, carregar menu normal
             console.warn('Erro ao carregar menu da mesa, carregando menu normal:', tableError);
@@ -248,6 +340,9 @@ export default function CardapioPublicoPage() {
             setTableNumberInCart(null);
             // Salvar menu no store para reutilização
             setMenuInStore(slug, currentMenuData);
+            // Buscar adicionais para produtos
+            const productsWithAddons = await loadAddonsForProducts(currentMenuData);
+            setProductsWithAddons(productsWithAddons);
           }
         } else {
           // Carregar menu normal
@@ -261,6 +356,10 @@ export default function CardapioPublicoPage() {
           // Salvar menu no store para reutilização
           setMenuInStore(slug, currentMenuData);
         }
+
+        // Buscar adicionais para produtos
+        const productsWithAddons = await loadAddonsForProducts(currentMenuData);
+        setProductsWithAddons(productsWithAddons);
 
         // Verificar se há categoria na URL (query parameter)
         const categoriaParam = searchParams.get('categoria');

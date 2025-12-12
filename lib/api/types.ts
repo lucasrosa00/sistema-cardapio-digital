@@ -98,6 +98,46 @@ export interface ProductVariationDto {
   price: number;
 }
 
+// ========== ADDONS ==========
+export interface ProductAddonDto {
+  id: number;
+  productAddonId: number;
+  name: string | null;
+  description: string | null;
+  extraPrice: number;
+  active: boolean;
+}
+
+export interface AddonDto {
+  id: number;
+  restaurantId: number;
+  name: string | null;
+  description: string | null;
+  extraPrice: number;
+  active: boolean;
+  order: number;
+}
+
+export interface CreateAddonDto {
+  name: string | null;
+  description: string | null;
+  extraPrice: number;
+  active: boolean;
+  order: number;
+  categoryIds: number[] | null;
+  productIds: number[] | null;
+}
+
+export interface UpdateAddonDto {
+  name?: string | null;
+  description?: string | null;
+  extraPrice?: number | null;
+  active?: boolean | null;
+  order?: number | null;
+  categoryIds?: number[] | null;
+  productIds?: number[] | null;
+}
+
 export interface ProductDto {
   id: number;
   restaurantId: number;
@@ -111,6 +151,7 @@ export interface ProductDto {
   images: string[] | null;
   active: boolean;
   order: number;
+  availableAddons?: ProductAddonDto[] | null;
 }
 
 export interface CreateProductDto {
@@ -206,11 +247,17 @@ export interface UpdateTableDto {
 }
 
 // ========== ORDERS ==========
+export interface OrderItemAddonDto {
+  productAddonId: number;
+  quantity: number;
+}
+
 export interface OrderItemDto {
   productId: number;
   quantity: number;
   observations?: string;
   selectedVariation?: string;
+  addons?: OrderItemAddonDto[] | null;
 }
 
 export interface CreateOrderDto {

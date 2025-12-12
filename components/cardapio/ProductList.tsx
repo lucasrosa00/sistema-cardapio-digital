@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { Product, Subcategory } from '@/lib/mockData';
 import { ProductImageCarousel } from './ProductImageCarousel';
 import { VariationSelectionModal } from './VariationSelectionModal';
-import { useCartStore } from '@/store/cartStore';
+import { ProductAddons } from '@/components/ui/ProductAddons';
+import { useCartStore, type CartItemAddon } from '@/store/cartStore';
 
 interface ProductListProps {
   products: Product[];
@@ -36,6 +37,8 @@ export function ProductList({
   const subcategoryRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const addItem = useCartStore((state) => state.addItem);
   const [selectedProductForVariation, setSelectedProductForVariation] = useState<Product | null>(null);
+  // Estado para gerenciar adicionais selecionados por produto
+  const [selectedAddonsByProduct, setSelectedAddonsByProduct] = useState<Record<number, CartItemAddon[]>>({});
 
   // Scroll para subcategoria selecionada
   useEffect(() => {
@@ -127,114 +130,165 @@ export function ProductList({
                   const productUrl = `${url}${params.toString() ? `?${params.toString()}` : ''}`;
 
                   return (
-                    <Link
+                    <div
                       key={product.id}
-                      href={productUrl}
-                      className={`block rounded-lg overflow-hidden transition-all ${darkMode ? 'bg-[#1F1F1F] border border-[#2F2F2F]' : 'bg-white border border-gray-200 hover:border-gray-300'} cursor-pointer hover:shadow-lg touch-manipulation`}
-                      style={{ touchAction: 'manipulation' }}
+                      className={`block rounded-lg overflow-hidden transition-all ${darkMode ? 'bg-[#1F1F1F] border border-[#2F2F2F]' : 'bg-white border border-gray-200 hover:border-gray-300'} hover:shadow-lg`}
                     >
-                    {/* Conteúdo superior: Título/Descrição e Imagem */}
-                    <div className="flex flex-row">
-                      {/* Informações do Produto */}
-                      <div className="p-4 flex-1 flex flex-col">
-                        <h4 className="text-lg font-semibold mb-2">
-                          {product.title}
-                        </h4>
-                        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                          {product.description}
-                        </p>
-                      </div>
-
-                      {/* Imagens do Produto */}
-                      {product.images && product.images.length > 0 && (
-                        <div className="py-4 pr-4 w-32 sm:w-40 md:w-64 flex-shrink-0">
-                          <ProductImageCarousel
-                            images={product.images}
-                            productTitle={product.title}
-                          />
+                      {/* Conteúdo superior: Título/Descrição e Imagem - Linkável */}
+                      <Link
+                        href={productUrl}
+                        className="flex flex-row cursor-pointer touch-manipulation"
+                        style={{ touchAction: 'manipulation' }}
+                      >
+                        {/* Informações do Produto */}
+                        <div className="p-4 flex-1 flex flex-col">
+                          <h4 className="text-lg font-semibold mb-2">
+                            {product.title}
+                          </h4>
+                          <p className={`text-sm whitespace-pre-line ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {product.description}
+                          </p>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Preço ou Variações - Ocupa 100% da largura */}
-                    <div className={`px-4 pb-4 w-full ${darkMode ? 'border-t border-[#2F2F2F]' : 'border-t border-gray-100'}`}>
-                      {product.priceType === 'unique' ? (
-                        <div className="flex justify-between items-center pt-4">
-                          <div
-                            className="text-xl font-bold"
-                            style={{ color: mainColor }}
-                          >
-                            {formatPrice(product)}
+                        {/* Imagens do Produto */}
+                        {product.images && product.images.length > 0 && (
+                          <div className="py-4 pr-4 w-32 sm:w-40 md:w-64 flex-shrink-0">
+                            <ProductImageCarousel
+                              images={product.images}
+                              productTitle={product.title}
+                            />
                           </div>
-                          {allowOrders && product.price && (
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                addItem({
-                                  productId: product.id,
-                                  productTitle: product.title,
-                                  price: product.price!,
-                                  image: product.images?.[0],
-                                });
-                              }}
-                              className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
-                              style={{ backgroundColor: mainColor }}
-                            >
-                              Adicionar
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="pt-4">
-                          <div className="space-y-2 mb-4">
-                            <p
-                              className="text-sm font-medium"
-                              style={{ color: mainColor }}
-                            >
-                              Opções disponíveis:
-                            </p>
-                            <div className="space-y-1">
-                              {product.variations?.map((variation, idx) => (
-                                <div
-                                  key={idx}
-                                  className="flex justify-between items-center"
-                                >
-                                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    {variation.label}
-                                  </span>
-                                  <span
-                                    className="font-semibold"
-                                    style={{ color: mainColor }}
-                                  >
-                                    R${' '}
-                                    {variation.price
-                                      .toFixed(2)
-                                      .replace('.', ',')}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          {allowOrders && (
-                            <div className="flex justify-end">
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setSelectedProductForVariation(product);
-                                }}
-                                className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
-                                style={{ backgroundColor: mainColor }}
+                        )}
+                      </Link>
+
+                      {/* Preço ou Variações - Ocupa 100% da largura */}
+                      <div className={`px-4 pb-4 w-full ${darkMode ? 'border-t border-[#2F2F2F]' : 'border-t border-gray-100'}`}>
+                        {product.priceType === 'unique' ? (
+                          <div className="pt-4 space-y-4">
+                            <div className="flex justify-between items-center">
+                              <div
+                                className="text-xl font-bold"
+                                style={{ color: mainColor }}
                               >
-                                Adicionar
-                              </button>
+                                {formatPrice(product)}
+                              </div>
+                              {allowOrders && product.price && (
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const selectedAddons = selectedAddonsByProduct[product.id] || [];
+                                    addItem({
+                                      productId: product.id,
+                                      productTitle: product.title,
+                                      price: product.price!,
+                                      image: product.images?.[0],
+                                      addons: selectedAddons.length > 0 ? selectedAddons : undefined,
+                                    });
+                                    // Limpar adicionais selecionados após adicionar ao carrinho
+                                    setSelectedAddonsByProduct(prev => {
+                                      const newState = { ...prev };
+                                      delete newState[product.id];
+                                      return newState;
+                                    });
+                                  }}
+                                  className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
+                                  style={{ backgroundColor: mainColor }}
+                                >
+                                  Adicionar
+                                </button>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      )}
+
+                            {/* Adicionais */}
+                            {product.availableAddons && product.availableAddons.length > 0 && (
+                              <div onClick={(e) => e.stopPropagation()}>
+                                <ProductAddons
+                                  addons={product.availableAddons}
+                                  allowSelection={allowOrders}
+                                  mainColor={mainColor}
+                                  darkMode={darkMode}
+                                  selectedAddons={selectedAddonsByProduct[product.id] || []}
+                                  onAddonsChange={(addons) => {
+                                    setSelectedAddonsByProduct(prev => ({
+                                      ...prev,
+                                      [product.id]: addons,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="pt-4">
+                            <div className="space-y-2 mb-4">
+                              <p
+                                className="text-sm font-medium"
+                                style={{ color: mainColor }}
+                              >
+                                Opções disponíveis:
+                              </p>
+                              <div className="space-y-1">
+                                {product.variations?.map((variation, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex justify-between items-center"
+                                  >
+                                    <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                      {variation.label}
+                                    </span>
+                                    <span
+                                      className="font-semibold"
+                                      style={{ color: mainColor }}
+                                    >
+                                      R${' '}
+                                      {variation.price
+                                        .toFixed(2)
+                                        .replace('.', ',')}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Adicionais */}
+                            {product.availableAddons && product.availableAddons.length > 0 && (
+                              <div className="mb-4" onClick={(e) => e.stopPropagation()}>
+                                <ProductAddons
+                                  addons={product.availableAddons}
+                                  allowSelection={allowOrders}
+                                  mainColor={mainColor}
+                                  darkMode={darkMode}
+                                  selectedAddons={selectedAddonsByProduct[product.id] || []}
+                                  onAddonsChange={(addons) => {
+                                    setSelectedAddonsByProduct(prev => ({
+                                      ...prev,
+                                      [product.id]: addons,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {allowOrders && (
+                              <div className="flex justify-end">
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setSelectedProductForVariation(product);
+                                  }}
+                                  className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
+                                  style={{ backgroundColor: mainColor }}
+                                >
+                                  Adicionar
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    </Link>
                   );
                 })}
               </div>
@@ -246,19 +300,37 @@ export function ProductList({
       {selectedProductForVariation && selectedProductForVariation.variations && (
         <VariationSelectionModal
           isOpen={!!selectedProductForVariation}
-          onClose={() => setSelectedProductForVariation(null)}
+          onClose={() => {
+            setSelectedProductForVariation(null);
+            // Limpar adicionais selecionados quando fechar o modal
+            setSelectedAddonsByProduct(prev => {
+              const newState = { ...prev };
+              delete newState[selectedProductForVariation.id];
+              return newState;
+            });
+          }}
           productTitle={selectedProductForVariation.title}
           variations={selectedProductForVariation.variations}
           mainColor={mainColor}
-          onSelectVariation={(variation) => {
+          darkMode={darkMode}
+          availableAddons={selectedProductForVariation.availableAddons}
+          allowSelection={allowOrders}
+          onSelectVariation={(variation, addons) => {
             addItem({
               productId: selectedProductForVariation.id,
               productTitle: selectedProductForVariation.title,
               price: variation.price,
               variationLabel: variation.label,
               image: selectedProductForVariation.images?.[0],
+              addons: addons,
             });
             setSelectedProductForVariation(null);
+            // Limpar adicionais selecionados após adicionar ao carrinho
+            setSelectedAddonsByProduct(prev => {
+              const newState = { ...prev };
+              delete newState[selectedProductForVariation.id];
+              return newState;
+            });
           }}
         />
       )}

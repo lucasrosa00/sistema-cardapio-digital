@@ -59,8 +59,18 @@ export function ShoppingCart({
         message += ` (${item.variationLabel})`;
       }
       message += `\n   Quantidade: ${item.quantity}x\n`;
+      
+      // Adicionais
+      if (item.addons && item.addons.length > 0) {
+        message += `   Adicionais:\n`;
+        item.addons.forEach((addon) => {
+          message += `     - ${addon.name} (x${addon.quantity}) - R$ ${(addon.extraPrice * addon.quantity).toFixed(2).replace('.', ',')}\n`;
+        });
+      }
+      
+      const itemSubtotal = item.price * item.quantity + (item.addons?.reduce((sum, addon) => sum + (addon.extraPrice * addon.quantity * item.quantity), 0) || 0);
       message += `   Valor unitário: R$ ${item.price.toFixed(2).replace('.', ',')}\n`;
-      message += `   Subtotal: R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}\n\n`;
+      message += `   Subtotal: R$ ${itemSubtotal.toFixed(2).replace('.', ',')}\n\n`;
     });
     
     message += `*Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}*\n`;
@@ -202,6 +212,10 @@ export function ShoppingCart({
           quantity: item.quantity,
           observations: undefined,
           selectedVariation: item.variationLabel || undefined,
+          addons: item.addons && item.addons.length > 0 ? item.addons.map(addon => ({
+            productAddonId: addon.productAddonId,
+            quantity: addon.quantity,
+          })) : undefined,
         })),
       });
 
@@ -326,26 +340,42 @@ export function ShoppingCart({
                           {item.variationLabel && (
                             <p className="text-sm text-gray-500">{item.variationLabel}</p>
                           )}
-                          <p className="text-sm font-medium" style={{ color: mainColor }}>
-                            R$ {item.price.toFixed(2).replace('.', ',')}
-                          </p>
+                          {item.addons && item.addons.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {item.addons.map((addon, addonIndex) => (
+                                <p key={addonIndex} className="text-xs text-gray-500">
+                                  + {addon.name} (x{addon.quantity}) - R$ {(addon.extraPrice * addon.quantity).toFixed(2).replace('.', ',')}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                          <div className="mt-1">
+                            <p className="text-sm font-medium" style={{ color: mainColor }}>
+                              R$ {item.price.toFixed(2).replace('.', ',')}
+                            </p>
+                            {item.addons && item.addons.length > 0 && (
+                              <p className="text-xs text-gray-500">
+                                + R$ {item.addons.reduce((sum, addon) => sum + (addon.extraPrice * addon.quantity), 0).toFixed(2).replace('.', ',')} em adicionais
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variationLabel)}
+                            onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variationLabel, item.addons)}
                             className="text-gray-700 w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                           >
                             -
                           </button>
                           <span className="text-gray-700 w-8 text-center font-medium">{item.quantity}</span>
                           <button
-                            onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variationLabel)}
+                            onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variationLabel, item.addons)}
                             className="text-gray-700 w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                           >
                             +
                           </button>
                           <button
-                            onClick={() => removeItem(item.productId, item.variationLabel)}
+                            onClick={() => removeItem(item.productId, item.variationLabel, item.addons)}
                             className="ml-2 text-red-500 hover:text-red-700"
                           >
                             <svg

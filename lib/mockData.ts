@@ -20,6 +20,11 @@ export interface ProductVariation {
   price: number;
 }
 
+export interface ProductVariation {
+  label: string;
+  price: number;
+}
+
 export interface Product {
   id: number;
   restaurantId: number;
@@ -33,6 +38,14 @@ export interface Product {
   images?: string[];
   active: boolean;
   order: number;
+  availableAddons?: Array<{
+    id: number;
+    productAddonId: number;
+    name: string | null;
+    description: string | null;
+    extraPrice: number;
+    active: boolean;
+  }>;
 }
 
 // Arrays mockados removidos - dados agora vêm da API
