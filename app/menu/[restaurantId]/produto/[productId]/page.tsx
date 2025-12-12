@@ -11,7 +11,9 @@ import { MenuHeader } from '@/components/cardapio/MenuHeader';
 import { ShoppingCart } from '@/components/cardapio/ShoppingCart';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
+import { ProductAddons } from '@/components/ui/ProductAddons';
 import { getServiceTypeLabel } from '@/lib/utils/serviceType';
+import type { CartItemAddon } from '@/store/cartStore';
 
 type Product = {
   id: number;
@@ -26,6 +28,14 @@ type Product = {
   images?: string[];
   active: boolean;
   order: number;
+  availableAddons?: Array<{
+    id: number;
+    productAddonId: number;
+    name: string | null;
+    description: string | null;
+    extraPrice: number;
+    active: boolean;
+  }>;
 };
 
 export default function ProdutoDetalhesPage() {
@@ -45,6 +55,7 @@ export default function ProdutoDetalhesPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
   const [allowOrders, setAllowOrders] = useState(false);
+  const [selectedAddons, setSelectedAddons] = useState<CartItemAddon[]>([]);
 
   const addItem = useCartStore((state) => state.addItem);
   const getMenuFromStore = useMenuStore((state) => state.getMenu);
@@ -125,6 +136,14 @@ export default function ProdutoDetalhesPage() {
                   images: prod.images || [],
                   active: prod.active,
                   order: prod.order,
+                  availableAddons: prod.availableAddons?.filter(addon => addon.active).map(addon => ({
+                    id: addon.id,
+                    productAddonId: addon.productAddonId,
+                    name: addon.name,
+                    description: addon.description,
+                    extraPrice: addon.extraPrice,
+                    active: addon.active,
+                  })) || [],
                 };
               }
             });
@@ -146,6 +165,14 @@ export default function ProdutoDetalhesPage() {
                 images: prod.images || [],
                 active: prod.active,
                 order: prod.order,
+                availableAddons: prod.availableAddons?.map(addon => ({
+                  id: addon.id,
+                  productAddonId: addon.productAddonId,
+                  name: addon.name,
+                  description: addon.description,
+                  extraPrice: addon.extraPrice,
+                  active: addon.active,
+                })) || [],
               };
             }
           });
@@ -316,10 +343,29 @@ export default function ProdutoDetalhesPage() {
               {/* Preço ou Variações */}
               <div className={`border-t pt-4 ${config.darkMode ? 'border-[#2F2F2F]' : 'border-gray-200'}`}>
                 {product.priceType === 'unique' ? (
-                  <div className="space-y-3">
-                    <span className="text-xl md:text-2xl font-bold" style={{ color: config.mainColor }}>
-                      {formatPrice(product.price || 0)}
-                    </span>
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <span className="text-xl md:text-2xl font-bold" style={{ color: config.mainColor }}>
+                        {formatPrice(product.price || 0)}
+                      </span>
+                    </div>
+
+                    {/* Adicionais */}
+                    {product.availableAddons && product.availableAddons.length > 0 && (
+                      <div className="mt-4">
+                        <ProductAddons
+                          addons={product.availableAddons}
+                          allowSelection={allowOrders}
+                          mainColor={config.mainColor}
+                          darkMode={config.darkMode}
+                          selectedAddons={selectedAddons}
+                          onAddonsChange={(addons) => {
+                            setSelectedAddons(addons);
+                          }}
+                        />
+                      </div>
+                    )}
+
                     {allowOrders && (
                       <Button
                         onClick={() => {
@@ -328,7 +374,9 @@ export default function ProdutoDetalhesPage() {
                             productTitle: product.title,
                             price: product.price!,
                             image: product.images?.[0],
+                            addons: selectedAddons.length > 0 ? selectedAddons : undefined,
                           });
+                          setSelectedAddons([]);
                         }}
                         variant="primary"
                         className="w-full py-3 mt-4"
@@ -370,6 +418,23 @@ export default function ProdutoDetalhesPage() {
                         </div>
                       ))}
                     </div>
+
+                    {/* Adicionais */}
+                    {product.availableAddons && product.availableAddons.length > 0 && (
+                      <div className="mt-4">
+                        <ProductAddons
+                          addons={product.availableAddons}
+                          allowSelection={allowOrders}
+                          mainColor={config.mainColor}
+                          darkMode={config.darkMode}
+                          selectedAddons={selectedAddons}
+                          onAddonsChange={(addons) => {
+                            setSelectedAddons(addons);
+                          }}
+                        />
+                      </div>
+                    )}
+
                     {allowOrders && (
                       <Button
                         onClick={() => {
@@ -385,8 +450,10 @@ export default function ProdutoDetalhesPage() {
                               price: variation.price,
                               variationLabel: variation.label,
                               image: product.images?.[0],
+                              addons: selectedAddons.length > 0 ? selectedAddons : undefined,
                             });
                             setSelectedVariation(null);
+                            setSelectedAddons([]);
                           }
                         }}
                         variant="primary"

@@ -45,6 +45,14 @@ type Product = {
   images?: string[];
   active: boolean;
   order: number;
+  availableAddons?: Array<{
+    id: number;
+    productAddonId: number;
+    name: string | null;
+    description: string | null;
+    extraPrice: number;
+    active: boolean;
+  }>;
 };
 
 export default function CardapioPublicoPage() {
@@ -113,6 +121,14 @@ export default function CardapioPublicoPage() {
         images: prod.images || [],
         active: prod.active,
         order: prod.order,
+        availableAddons: prod.availableAddons?.filter(addon => addon.active).map(addon => ({
+          id: addon.id,
+          productAddonId: addon.productAddonId,
+          name: addon.name,
+          description: addon.description,
+          extraPrice: addon.extraPrice,
+          active: addon.active,
+        })) || [],
       })) || []
     ) || [];
 
@@ -130,6 +146,14 @@ export default function CardapioPublicoPage() {
       images: prod.images || [],
       active: prod.active,
       order: prod.order,
+      availableAddons: prod.availableAddons?.map(addon => ({
+        id: addon.id,
+        productAddonId: addon.productAddonId,
+        name: addon.name,
+        description: addon.description,
+        extraPrice: addon.extraPrice,
+        active: addon.active,
+      })) || [],
     }));
 
     // Combinar produtos de subcategorias e da categoria
