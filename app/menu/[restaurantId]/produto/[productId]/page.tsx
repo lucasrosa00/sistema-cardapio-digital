@@ -11,10 +11,7 @@ import { MenuHeader } from '@/components/cardapio/MenuHeader';
 import { ShoppingCart } from '@/components/cardapio/ShoppingCart';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
-import { ProductAddons } from '@/components/ui/ProductAddons';
 import { getServiceTypeLabel } from '@/lib/utils/serviceType';
-import type { ProductAddonDto } from '@/lib/api/types';
-import type { CartItemAddon } from '@/store/cartStore';
 
 type Product = {
   id: number;
@@ -29,7 +26,6 @@ type Product = {
   images?: string[];
   active: boolean;
   order: number;
-  availableAddons?: ProductAddonDto[];
 };
 
 export default function ProdutoDetalhesPage() {
@@ -49,7 +45,6 @@ export default function ProdutoDetalhesPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
   const [allowOrders, setAllowOrders] = useState(false);
-  const [selectedAddons, setSelectedAddons] = useState<CartItemAddon[]>([]);
 
   const addItem = useCartStore((state) => state.addItem);
   const getMenuFromStore = useMenuStore((state) => state.getMenu);
@@ -117,8 +112,6 @@ export default function ProdutoDetalhesPage() {
           cat.subcategories?.forEach(sub => {
             sub.products?.forEach(prod => {
               if (prod.id === productId) {
-                console.log('Produto encontrado (subcategoria):', prod);
-                console.log('availableAddons:', prod.availableAddons);
                 foundProduct = {
                   id: prod.id,
                   restaurantId: prod.restaurantId,
@@ -132,7 +125,6 @@ export default function ProdutoDetalhesPage() {
                   images: prod.images || [],
                   active: prod.active,
                   order: prod.order,
-                  availableAddons: prod.availableAddons || [],
                 };
               }
             });
@@ -141,8 +133,6 @@ export default function ProdutoDetalhesPage() {
           // Produtos diretamente na categoria
           cat.products?.forEach(prod => {
             if (prod.id === productId) {
-              console.log('Produto encontrado (categoria):', prod);
-              console.log('availableAddons:', prod.availableAddons);
               foundProduct = {
                 id: prod.id,
                 restaurantId: prod.restaurantId,
@@ -156,34 +146,12 @@ export default function ProdutoDetalhesPage() {
                 images: prod.images || [],
                 active: prod.active,
                 order: prod.order,
-                availableAddons: prod.availableAddons || [],
               };
             }
           });
         });
 
-        // Se o produto foi encontrado mas não tem adicionais, buscar diretamente da API
-        if (foundProduct !== null) {
-          const productWithAddons: Product = foundProduct;
-          const currentAddons = productWithAddons.availableAddons;
-          const hasNoAddons = !currentAddons || currentAddons.length === 0;
-          if (hasNoAddons) {
-            try {
-              const { addonsService } = await import('@/lib/api/addonsService');
-              const productAddons = await addonsService.getByProduct(productId);
-              console.log('Adicionais buscados da API:', productAddons);
-              if (productAddons && productAddons.length > 0) {
-                productWithAddons.availableAddons = productAddons;
-                foundProduct = productWithAddons;
-              }
-            } catch (addonError) {
-              console.error('Erro ao buscar adicionais do produto:', addonError);
-            }
-          }
-        }
-
         if (foundProduct) {
-          console.log(foundProduct);
           setProduct(foundProduct);
         } else {
           setError('Produto não encontrado');
@@ -340,7 +308,7 @@ export default function ProdutoDetalhesPage() {
                 <h2 className={`text-xl md:text-2xl font-bold mb-3 ${config.darkMode ? 'text-white' : ''}`}>
                   {product.title}
                 </h2>
-                <p className={`text-sm md:text-base mb-6 whitespace-pre-line ${config.darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className={`text-sm md:text-base mb-6 ${config.darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   {product.description}
                 </p>
               </div>
@@ -352,21 +320,6 @@ export default function ProdutoDetalhesPage() {
                     <span className="text-xl md:text-2xl font-bold" style={{ color: config.mainColor }}>
                       {formatPrice(product.price || 0)}
                     </span>
-                    
-                    {/* Adicionais */}
-                    {product.availableAddons && product.availableAddons.length > 0 && (
-                      <div className="mt-4">
-                        <ProductAddons
-                          addons={product.availableAddons}
-                          allowSelection={allowOrders}
-                          mainColor={config.mainColor}
-                          darkMode={config.darkMode}
-                          selectedAddons={selectedAddons}
-                          onAddonsChange={setSelectedAddons}
-                        />
-                      </div>
-                    )}
-
                     {allowOrders && (
                       <Button
                         onClick={() => {
@@ -375,9 +328,7 @@ export default function ProdutoDetalhesPage() {
                             productTitle: product.title,
                             price: product.price!,
                             image: product.images?.[0],
-                            addons: selectedAddons.length > 0 ? selectedAddons : undefined,
                           });
-                          setSelectedAddons([]);
                         }}
                         variant="primary"
                         className="w-full py-3 mt-4"
@@ -419,21 +370,6 @@ export default function ProdutoDetalhesPage() {
                         </div>
                       ))}
                     </div>
-
-                    {/* Adicionais */}
-                    {product.availableAddons && product.availableAddons.length > 0 && (
-                      <div className="mt-4">
-                        <ProductAddons
-                          addons={product.availableAddons}
-                          allowSelection={allowOrders}
-                          mainColor={config.mainColor}
-                          darkMode={config.darkMode}
-                          selectedAddons={selectedAddons}
-                          onAddonsChange={setSelectedAddons}
-                        />
-                      </div>
-                    )}
-
                     {allowOrders && (
                       <Button
                         onClick={() => {
@@ -449,10 +385,8 @@ export default function ProdutoDetalhesPage() {
                               price: variation.price,
                               variationLabel: variation.label,
                               image: product.images?.[0],
-                              addons: selectedAddons.length > 0 ? selectedAddons : undefined,
                             });
                             setSelectedVariation(null);
-                            setSelectedAddons([]);
                           }
                         }}
                         variant="primary"
