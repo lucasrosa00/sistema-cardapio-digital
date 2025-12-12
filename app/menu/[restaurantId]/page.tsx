@@ -224,32 +224,51 @@ export default function CardapioPublicoPage() {
       return [...subcategoryProducts, ...categoryProducts];
     }) || [];
 
-    // Buscar adicionais para produtos que não têm
-    const productsWithAddonsLoaded = await Promise.all(
-      productsToLoadAddons.map(async (product) => {
-        // Sempre buscar adicionais diretamente da API para garantir que temos apenas os vinculados a este produto
-        try {
-          const { addonsService } = await import('@/lib/api/addonsService');
-          const productAddons = await addonsService.getByProduct(product.id);
-          // Se já tem adicionais no menu e a API retornou os mesmos, usar os do menu
-          // Caso contrário, usar os da API (que são sempre corretos)
-          if (productAddons && productAddons.length > 0) {
-            return {
-              ...product,
-              availableAddons: productAddons,
-            };
-          }
-          // Se não tem adicionais na API, manter os do menu (se houver) ou vazio
-          return product;
-        } catch (addonError) {
-          console.error(`Erro ao buscar adicionais do produto ${product.id}:`, addonError);
-          // Em caso de erro, manter os adicionais do menu (se houver)
-          return product;
-        }
-      })
+    // Separar produtos que já têm adicionais dos que precisam buscar
+    const productsWithAddons = productsToLoadAddons.filter(p => 
+      p.availableAddons && p.availableAddons.length > 0
+    );
+    const productsWithoutAddons = productsToLoadAddons.filter(p => 
+      !p.availableAddons || p.availableAddons.length === 0
     );
 
-    console.log('Produtos com adicionais carregados:', productsWithAddonsLoaded.filter(p => p.availableAddons && p.availableAddons.length > 0).length);
+    // Se todos os produtos já têm adicionais, retornar direto
+    if (productsWithoutAddons.length === 0) {
+      return productsToLoadAddons;
+    }
+
+    // Buscar adicionais apenas para produtos que não têm, em lotes para não sobrecarregar
+    const BATCH_SIZE = 10; // Processar 10 produtos por vez
+    const { addonsService } = await import('@/lib/api/addonsService');
+    
+    const productsWithAddonsLoaded: Product[] = [...productsWithAddons];
+    
+    // Processar em lotes
+    for (let i = 0; i < productsWithoutAddons.length; i += BATCH_SIZE) {
+      const batch = productsWithoutAddons.slice(i, i + BATCH_SIZE);
+      
+      const batchResults = await Promise.all(
+        batch.map(async (product) => {
+          try {
+            const productAddons = await addonsService.getByProduct(product.id);
+            if (productAddons && productAddons.length > 0) {
+              return {
+                ...product,
+                availableAddons: productAddons,
+              };
+            }
+            return product;
+          } catch (addonError) {
+            console.error(`Erro ao buscar adicionais do produto ${product.id}:`, addonError);
+            return product;
+          }
+        })
+      );
+      
+      productsWithAddonsLoaded.push(...batchResults);
+    }
+
+    console.log(`Adicionais carregados: ${productsWithAddonsLoaded.filter(p => p.availableAddons && p.availableAddons.length > 0).length} de ${productsToLoadAddons.length} produtos`);
     return productsWithAddonsLoaded;
   };
 

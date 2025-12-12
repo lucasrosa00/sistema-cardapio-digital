@@ -12,7 +12,21 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Função para obter a URL base do site
+const getMetadataBase = (): URL => {
+  // Prioridade: NEXT_PUBLIC_URL > VERCEL_URL > localhost
+  if (process.env.NEXT_PUBLIC_URL) {
+    return new URL(process.env.NEXT_PUBLIC_URL);
+  }
+  if (process.env.VERCEL_URL) {
+    return new URL(`https://${process.env.VERCEL_URL}`);
+  }
+  // Fallback para desenvolvimento local
+  return new URL('http://localhost:3000');
+};
+
 export const metadata: Metadata = {
+  metadataBase: getMetadataBase(),
   title: "Serviços - Transforme seu negócio com tecnologia",
   description:
     "Serviços completo para restaurantes, hamburguerias, lanchonetes e lojas. Rápido, fácil de editar e funciona em 3G/4G. Crie seu cardápio ou catálogo agora por apenas R$ 300/ano.",
