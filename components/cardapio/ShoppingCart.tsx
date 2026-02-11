@@ -33,9 +33,13 @@ export function ShoppingCart({
   const [observations, setObservations] = useState('');
   const [deliveryType, setDeliveryType] = useState<'Entrega' | 'Retirada'>('Retirada');
   const [address, setAddress] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'Pix' | 'Cartão de Crédito' | 'Cartão de Débito' | 'Dinheiro'>('Pix');
+  const [needChange, setNeedChange] = useState(false);
+  const [changeFor, setChangeFor] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerNameError, setCustomerNameError] = useState('');
   const [addressError, setAddressError] = useState('');
+  const [changeForError, setChangeForError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const { items, removeItem, updateQuantity, getTotal, getItemCount, clearCart, tableNumber, tableId } = useCartStore();
 
@@ -50,6 +54,14 @@ export function ShoppingCart({
     message += `*Tipo de Entrega:* ${deliveryType}\n`;
     if (deliveryType === 'Entrega' && address.trim()) {
       message += `*Endereço:* ${address.trim()}\n`;
+    }
+    if (deliveryType === 'Entrega') {
+      message += `*Método de Pagamento:* ${paymentMethod}\n`;
+      if (paymentMethod === 'Dinheiro' && needChange && changeFor.trim()) {
+        message += `*Troco para:* R$ ${changeFor.trim().replace('.', ',')}\n`;
+      } else if (paymentMethod === 'Dinheiro' && !needChange) {
+        message += `*Troco:* Não precisa\n`;
+      }
     }
     message += `\n*Itens do Pedido:*\n`;
     
@@ -110,6 +122,11 @@ export function ShoppingCart({
       return;
     }
 
+    if (deliveryType === 'Entrega' && paymentMethod === 'Dinheiro' && needChange && !changeFor.trim()) {
+      setChangeForError('Por favor, informe o valor para troco.');
+      return;
+    }
+
     if (!whatsAppNumber) {
       alert('Número do WhatsApp não configurado. Entre em contato com o estabelecimento.');
       return;
@@ -118,6 +135,7 @@ export function ShoppingCart({
     // Limpar erros
     setCustomerNameError('');
     setAddressError('');
+    setChangeForError('');
 
     // Formatar número do WhatsApp (remover caracteres não numéricos, exceto +)
     const cleanNumber = whatsAppNumber.replace(/[^\d+]/g, '');
@@ -134,6 +152,9 @@ export function ShoppingCart({
     setObservations('');
     setDeliveryType('Retirada');
     setAddress('');
+    setPaymentMethod('Pix');
+    setNeedChange(false);
+    setChangeFor('');
     setShowSuccessModal(true);
   };
 
@@ -168,10 +189,16 @@ export function ShoppingCart({
       setAddressError('Por favor, informe o endereço de entrega.');
       return;
     }
+
+    if (deliveryType === 'Entrega' && paymentMethod === 'Dinheiro' && needChange && !changeFor.trim()) {
+      setChangeForError('Por favor, informe o valor para troco.');
+      return;
+    }
     
     // Limpar erros
     setCustomerNameError('');
     setAddressError('');
+    setChangeForError('');
 
     setIsSubmitting(true);
     try {
@@ -227,6 +254,9 @@ export function ShoppingCart({
       setObservations('');
       setDeliveryType('Retirada');
       setAddress('');
+      setPaymentMethod('Pix');
+      setNeedChange(false);
+      setChangeFor('');
       setShowSuccessModal(true);
     } catch (error: any) {
       console.error('Erro ao realizar pedido:', error);
@@ -472,10 +502,14 @@ export function ShoppingCart({
                       value={deliveryType}
                       onChange={(e) => {
                         setDeliveryType(e.target.value as 'Entrega' | 'Retirada');
-                        // Limpar endereço e erro quando mudar para retirada
+                        // Limpar endereço, pagamento e erros quando mudar para retirada
                         if (e.target.value === 'Retirada') {
                           setAddress('');
                           setAddressError('');
+                          setPaymentMethod('Pix');
+                          setNeedChange(false);
+                          setChangeFor('');
+                          setChangeForError('');
                         }
                       }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -508,6 +542,88 @@ export function ShoppingCart({
                         <p className="mt-1 text-sm text-red-600">{addressError}</p>
                       )}
                     </div>
+                  )}
+                  {deliveryType === 'Entrega' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Método de Pagamento <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          name="paymentMethod"
+                          value={paymentMethod}
+                          onChange={(e) => {
+                            setPaymentMethod(e.target.value as 'Pix' | 'Cartão de Crédito' | 'Cartão de Débito' | 'Dinheiro');
+                            if (e.target.value !== 'Dinheiro') {
+                              setNeedChange(false);
+                              setChangeFor('');
+                              setChangeForError('');
+                            }
+                          }}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="Pix">Pix</option>
+                          <option value="Cartão de Crédito">Cartão de Crédito</option>
+                          <option value="Cartão de Débito">Cartão de Débito</option>
+                          <option value="Dinheiro">Dinheiro</option>
+                        </select>
+                      </div>
+                      {paymentMethod === 'Dinheiro' && (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Precisa de troco?
+                            </label>
+                            <div className="flex gap-4">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="needChange"
+                                  checked={!needChange}
+                                  onChange={() => {
+                                    setNeedChange(false);
+                                    setChangeFor('');
+                                    setChangeForError('');
+                                  }}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-sm text-gray-700">Não</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="needChange"
+                                  checked={needChange}
+                                  onChange={() => setNeedChange(true)}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-sm text-gray-700">Sim</span>
+                              </label>
+                            </div>
+                          </div>
+                          {needChange && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Troco para quantos? <span className="text-red-500">*</span>
+                              </label>
+                              <Input
+                                name="changeFor"
+                                type="text"
+                                value={changeFor}
+                                onChange={(e) => {
+                                  setChangeFor(e.target.value);
+                                  if (changeForError) setChangeForError('');
+                                }}
+                                placeholder="Ex: 50,00 ou 100"
+                              />
+                              {changeForError && (
+                                <p className="mt-1 text-sm text-red-600">{changeForError}</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
