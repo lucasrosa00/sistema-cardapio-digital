@@ -102,16 +102,30 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
     if (filesToProcess.length === 0) return;
 
-    setIsCompressing(true);
-    setCompressionProgress({});
+    // Verificar se há arquivos que precisam ser comprimidos (maior que 600KB)
+    const filesToCompress = filesToProcess.filter(file => file.size > 600 * 1024);
+    const needsCompression = filesToCompress.length > 0;
+
+    if (needsCompression) {
+      setIsCompressing(true);
+      setCompressionProgress({});
+    }
 
     try {
-      // Comprimir todas as imagens automaticamente (mesma compressão da página de compressão)
+      // Processar arquivos: comprimir apenas os que têm mais de 600KB
       const processedFiles = await Promise.all(
         filesToProcess.map(async (file) => {
           try {
-            // Inicializar progresso
-            setCompressionProgress(prev => ({ ...prev, [file.name]: 0 }));
+            // Se o arquivo tem menos de 600KB, não comprimir
+            const fileSizeKB = file.size / 1024;
+            if (fileSizeKB < 600) {
+              return file; // Retornar arquivo original sem compressão
+            }
+
+            // Inicializar progresso apenas para arquivos que serão comprimidos
+            if (needsCompression) {
+              setCompressionProgress(prev => ({ ...prev, [file.name]: 0 }));
+            }
 
             // Verificar se é arquivo HEIC
             const isHeic = file.name.toLowerCase().endsWith('.heic') || 
@@ -123,20 +137,28 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               // Tentar comprimir HEIC - pode falhar se o navegador não suportar
               try {
                 const compressed = await compressImage(file, (progress) => {
-                  setCompressionProgress(prev => ({ ...prev, [file.name]: progress }));
+                  if (needsCompression) {
+                    setCompressionProgress(prev => ({ ...prev, [file.name]: progress }));
+                  }
                 });
-                setCompressionProgress(prev => ({ ...prev, [file.name]: 100 }));
+                if (needsCompression) {
+                  setCompressionProgress(prev => ({ ...prev, [file.name]: 100 }));
+                }
                 return compressed;
               } catch (heicError) {
                 throw new Error(`Arquivo HEIC "${file.name}" não pode ser processado. Por favor, converta para JPEG ou PNG antes de enviar.`);
               }
             }
 
-            // Comprimir todas as imagens automaticamente
+            // Comprimir apenas arquivos maiores que 600KB
             const compressed = await compressImage(file, (progress) => {
-              setCompressionProgress(prev => ({ ...prev, [file.name]: progress }));
+              if (needsCompression) {
+                setCompressionProgress(prev => ({ ...prev, [file.name]: progress }));
+              }
             });
-            setCompressionProgress(prev => ({ ...prev, [file.name]: 100 }));
+            if (needsCompression) {
+              setCompressionProgress(prev => ({ ...prev, [file.name]: 100 }));
+            }
             return compressed;
           } catch (fileError) {
             if (fileError instanceof Error && fileError.message.includes('HEIC')) {
@@ -166,8 +188,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       const errorMessage = error instanceof Error ? error.message : 'Erro ao processar imagens. Tente novamente.';
       alert(errorMessage);
     } finally {
-      setIsCompressing(false);
-      setCompressionProgress({});
+      if (needsCompression) {
+        setIsCompressing(false);
+        setCompressionProgress({});
+      }
     }
 
     // Reset input
