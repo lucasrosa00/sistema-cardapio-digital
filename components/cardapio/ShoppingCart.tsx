@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
 import { ordersService } from '@/lib/api/ordersService';
@@ -41,15 +41,98 @@ export function ShoppingCart({
   const [addressError, setAddressError] = useState('');
   const [changeForError, setChangeForError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLocationLoading, setIsLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState('');
+  const addressInputRef = useRef<HTMLInputElement>(null);
+  const googleAutocompleteRef = useRef<unknown>(null);
+  const googleApiKey = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY : undefined;
   const { items, removeItem, updateQuantity, getTotal, getItemCount, clearCart, tableNumber, tableId } = useCartStore();
 
   const itemCount = getItemCount();
   const subtotal = getTotal();
   const total = deliveryType === 'Entrega' ? subtotal + deliveryFee : subtotal;
 
+  // Carregar Google Places Autocomplete quando houver API key
+  useEffect(() => {
+    if (!googleApiKey || !addressInputRef.current || typeof window === 'undefined') return;
+    if ((window as unknown as { google?: { maps?: { places?: { Autocomplete?: unknown } } } }).google?.maps?.places?.Autocomplete) {
+      const Autocomplete = (window as unknown as { google: { maps: { places: { Autocomplete: new (el: HTMLInputElement, opts: { types: string[] }) => { addListener: (e: string, fn: () => void) => void; getPlace: () => { formatted_address?: string } } } } } }).google.maps.places.Autocomplete;
+      googleAutocompleteRef.current = new Autocomplete(addressInputRef.current, { types: ['address'] });
+      (googleAutocompleteRef.current as { addListener: (e: string, fn: () => void) => void }).addListener('place_changed', () => {
+        const place = (googleAutocompleteRef.current as { getPlace: () => { formatted_address?: string } }).getPlace();
+        if (place?.formatted_address) setAddress(place.formatted_address);
+      });
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (!addressInputRef.current) return;
+      const google = (window as unknown as { google?: { maps?: { places?: { Autocomplete: new (el: HTMLInputElement, opts: { types: string[] }) => unknown } } } }).google;
+      if (google?.maps?.places?.Autocomplete) {
+        const Autocomplete = google.maps.places.Autocomplete;
+        googleAutocompleteRef.current = new Autocomplete(addressInputRef.current, { types: ['address'] });
+        (googleAutocompleteRef.current as { addListener: (e: string, fn: () => void) => void }).addListener('place_changed', () => {
+          const place = (googleAutocompleteRef.current as { getPlace: () => { formatted_address?: string } }).getPlace();
+          if (place?.formatted_address) setAddress(place.formatted_address);
+        });
+      }
+    };
+    document.head.appendChild(script);
+  }, [googleApiKey, showCheckoutForm, deliveryType]);
+
+  // Usar localização atual (Nominatim - gratuito, sem API key)
+  const handleUseMyLocation = () => {
+    setLocationError('');
+    if (!navigator.geolocation) {
+      setLocationError('Seu navegador não suporta geolocalização.');
+      return;
+    }
+    setIsLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+            { headers: { 'Accept-Language': 'pt-BR', 'User-Agent': 'SistemaCardapioDigital/1.0' } }
+          );
+          const data = await res.json();
+          if (data?.display_name) {
+            setAddress(data.display_name);
+            setAddressError('');
+          } else {
+            setLocationError('Não foi possível obter o endereço.');
+          }
+        } catch {
+          setLocationError('Erro ao buscar endereço. Tente novamente.');
+        } finally {
+          setIsLocationLoading(false);
+        }
+      },
+      () => {
+        setLocationError('Não foi possível acessar sua localização. Verifique as permissões do navegador.');
+        setIsLocationLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  // Gera código aleatório curto para identificação do pedido (ex.: A3X9K2)
+  const gerarCodigoPedido = (tamanho = 6): string => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let codigo = '';
+    for (let i = 0; i < tamanho; i++) {
+      codigo += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return codigo;
+  };
+
   // Função para formatar mensagem do WhatsApp
-  const formatWhatsAppMessage = (customerName: string, observations: string) => {
-    let message = `*Pedido - ${restaurantName}*\n\n`;
+  const formatWhatsAppMessage = (customerName: string, observations: string, codigoPedido: string) => {
+    let message = `*Pedido #${codigoPedido} - ${restaurantName}*\n\n`;
     message += `*Cliente:* ${customerName}\n\n`;
     message += `*Tipo de Entrega:* ${deliveryType}\n`;
     if (deliveryType === 'Entrega' && address.trim()) {
@@ -137,9 +220,9 @@ export function ShoppingCart({
     setAddressError('');
     setChangeForError('');
 
-    // Formatar número do WhatsApp (remover caracteres não numéricos, exceto +)
+    const codigoPedido = gerarCodigoPedido(6);
     const cleanNumber = whatsAppNumber.replace(/[^\d+]/g, '');
-    const whatsappUrl = `https://wa.me/${cleanNumber}?text=${formatWhatsAppMessage(customerName.trim(), observations.trim())}`;
+    const whatsappUrl = `https://wa.me/${cleanNumber}?text=${formatWhatsAppMessage(customerName.trim(), observations.trim(), codigoPedido)}`;
     
     // Abrir WhatsApp em nova aba
     window.open(whatsappUrl, '_blank');
@@ -506,6 +589,7 @@ export function ShoppingCart({
                         if (e.target.value === 'Retirada') {
                           setAddress('');
                           setAddressError('');
+                          setLocationError('');
                           setPaymentMethod('Pix');
                           setNeedChange(false);
                           setChangeFor('');
@@ -519,27 +603,66 @@ export function ShoppingCart({
                     </select>
                   </div>
                   {deliveryType === 'Entrega' && (
-                    <div>
+                    <div className="space-y-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Endereço de Entrega <span className="text-red-500">*</span>
                       </label>
-                      <textarea
-                        name="address"
-                        value={address}
-                        onChange={(e) => {
-                          setAddress(e.target.value);
-                          // Limpar erro quando o usuário começar a digitar
-                          if (addressError) {
-                            setAddressError('');
-                          }
-                        }}
-                        placeholder="Rua, número, bairro, complemento..."
-                        rows={3}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      />
+                      {googleApiKey ? (
+                        <input
+                          ref={addressInputRef}
+                          name="address"
+                          type="text"
+                          value={address}
+                          onChange={(e) => {
+                            setAddress(e.target.value);
+                            if (addressError) setAddressError('');
+                          }}
+                          placeholder="Digite ou busque o endereço (Google)"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      ) : (
+                        <textarea
+                          name="address"
+                          value={address}
+                          onChange={(e) => {
+                            setAddress(e.target.value);
+                            if (addressError) setAddressError('');
+                          }}
+                          placeholder="Rua, número, bairro, complemento..."
+                          rows={3}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleUseMyLocation}
+                          disabled={isLocationLoading}
+                          className="text-sm py-1.5 px-3 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                        >
+                          {isLocationLoading ? (
+                            <>
+                              <span className="inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                              Buscando...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              Usar minha localização
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      {locationError && (
+                        <p className="text-sm text-amber-600">{locationError}</p>
+                      )}
                       {addressError && (
-                        <p className="mt-1 text-sm text-red-600">{addressError}</p>
+                        <p className="text-sm text-red-600">{addressError}</p>
                       )}
                     </div>
                   )}
