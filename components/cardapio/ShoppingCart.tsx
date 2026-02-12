@@ -130,6 +130,15 @@ export function ShoppingCart({
     return codigo;
   };
 
+  // Remove acentos e ç para impressoras que não suportam caracteres especiais
+  const removerAcentos = (str: string): string => {
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/ç/g, 'c')
+      .replace(/Ç/g, 'C');
+  };
+
   // Função para formatar mensagem do WhatsApp
   const formatWhatsAppMessage = (customerName: string, observations: string, codigoPedido: string) => {
     let message = `*Pedido #${codigoPedido} - ${restaurantName}*\n\n`;
@@ -179,13 +188,13 @@ export function ShoppingCart({
     message += `*Total: R$ ${total.toFixed(2).replace('.', ',')}*\n\n`;
     
     if (observations.trim()) {
-      message += `*Observações:*\n${observations.trim()}\n\n`;
+      message += `*Obs:*\n${observations.trim()}\n\n`;
     }
     
     const serviceTypeText = serviceType === 'Catalog' ? 'catálogo' : 'cardápio';
     message += `_Pedido realizado através do ${serviceTypeText} digital_`;
     
-    return encodeURIComponent(message);
+    return encodeURIComponent(removerAcentos(message));
   };
 
   // Função para enviar pedido via WhatsApp
