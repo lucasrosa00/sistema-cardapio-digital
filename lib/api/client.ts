@@ -258,6 +258,7 @@ async function apiRequest<T>(
       throw error;
     }
   }
+  throw new Error('Erro na requisição');
 }
 
 // Função para fazer upload de arquivo (multipart/form-data)
