@@ -52,15 +52,38 @@ export function ShoppingCart({
   const subtotal = getTotal();
   const total = deliveryType === 'Entrega' ? subtotal + deliveryFee : subtotal;
 
+  // Monta endereço curto a partir de address_components (evita "Região Imediata", "Região Geográfica" etc.)
+  const getShortAddressFromPlace = (place: {
+    address_components?: Array< { long_name: string; short_name: string; types: string[] }>;
+    formatted_address?: string;
+  }): string => {
+    const comp = place?.address_components;
+    if (!comp?.length) return place?.formatted_address ?? '';
+    const get = (types: string[]) => comp.find((c) => types.some((t) => c.types.includes(t)))?.long_name ?? '';
+    const route = get(['route']);
+    const streetNumber = get(['street_number']);
+    const sublocality = get(['sublocality', 'sublocality_level_1', 'sublocality_level_2', 'neighborhood']);
+    const locality = get(['locality', 'administrative_area_level_2']);
+    const state = get(['administrative_area_level_1']);
+    const postalCode = get(['postal_code']);
+    const parts: string[] = [];
+    if (route) parts.push(streetNumber ? `${route}, ${streetNumber}` : route);
+    if (sublocality) parts.push(sublocality);
+    if (locality) parts.push(state ? `${locality} - ${comp.find((c) => c.types.includes('administrative_area_level_1'))?.short_name ?? state}` : locality);
+    if (postalCode) parts.push(postalCode);
+    return parts.length > 0 ? parts.join(', ') : (place?.formatted_address ?? '');
+  };
+
   // Carregar Google Places Autocomplete quando houver API key
   useEffect(() => {
     if (!googleApiKey || !addressInputRef.current || typeof window === 'undefined') return;
     if ((window as unknown as { google?: { maps?: { places?: { Autocomplete?: unknown } } } }).google?.maps?.places?.Autocomplete) {
-      const Autocomplete = (window as unknown as { google: { maps: { places: { Autocomplete: new (el: HTMLInputElement, opts: { types: string[] }) => { addListener: (e: string, fn: () => void) => void; getPlace: () => { formatted_address?: string } } } } } }).google.maps.places.Autocomplete;
+      const Autocomplete = (window as unknown as { google: { maps: { places: { Autocomplete: new (el: HTMLInputElement, opts: { types: string[] }) => { addListener: (e: string, fn: () => void) => void; getPlace: () => { formatted_address?: string; address_components?: Array<{ long_name: string; short_name: string; types: string[] }> } } } } } }).google.maps.places.Autocomplete;
       googleAutocompleteRef.current = new Autocomplete(addressInputRef.current, { types: ['address'] });
       (googleAutocompleteRef.current as { addListener: (e: string, fn: () => void) => void }).addListener('place_changed', () => {
-        const place = (googleAutocompleteRef.current as { getPlace: () => { formatted_address?: string } }).getPlace();
-        if (place?.formatted_address) setAddress(place.formatted_address);
+        const place = (googleAutocompleteRef.current as { getPlace: () => { formatted_address?: string; address_components?: Array<{ long_name: string; short_name: string; types: string[] }> } }).getPlace();
+        const short = getShortAddressFromPlace(place);
+        if (short) setAddress(short);
       });
       return;
     }
@@ -75,8 +98,9 @@ export function ShoppingCart({
         const Autocomplete = google.maps.places.Autocomplete;
         googleAutocompleteRef.current = new Autocomplete(addressInputRef.current, { types: ['address'] });
         (googleAutocompleteRef.current as { addListener: (e: string, fn: () => void) => void }).addListener('place_changed', () => {
-          const place = (googleAutocompleteRef.current as { getPlace: () => { formatted_address?: string } }).getPlace();
-          if (place?.formatted_address) setAddress(place.formatted_address);
+          const place = (googleAutocompleteRef.current as { getPlace: () => { formatted_address?: string; address_components?: Array<{ long_name: string; short_name: string; types: string[] }> } }).getPlace();
+          const short = getShortAddressFromPlace(place);
+          if (short) setAddress(short);
         });
       }
     };
@@ -141,8 +165,17 @@ export function ShoppingCart({
 
   // Função para formatar mensagem do WhatsApp
   const formatWhatsAppMessage = (customerName: string, observations: string, codigoPedido: string) => {
+    const agora = new Date();
+    const dataHora = agora.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
     let message = `*Pedido #${codigoPedido} - ${restaurantName}*\n\n`;
-    message += `*Cliente:* ${customerName}\n\n`;
+    message += `*Cliente:* ${customerName}\n`;
+    message += `*Horário:* ${dataHora}\n\n`;
     message += `*Tipo de Entrega:* ${deliveryType}\n`;
     if (deliveryType === 'Entrega' && address.trim()) {
       message += `*Endereço:* ${address.trim()}\n`;

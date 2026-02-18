@@ -167,12 +167,21 @@ async function apiRequest<T>(
     : endpoint;
   
   const url = `${BASE_URL}${finalEndpoint}`;
-  
-  try {
-    let response = await fetch(url, {
-      ...options,
-      headers,
-    });
+  const isGet = (options.method ?? 'GET') === 'GET';
+  const maxAttempts = isGet ? 3 : 1;
+
+  const isNetworkError = (err: unknown): boolean => {
+    if (err instanceof TypeError && err.message === 'fetch failed') return true;
+    const cause = err && typeof err === 'object' && 'cause' in err ? (err as { cause?: unknown }).cause : null;
+    return cause instanceof Error && ('code' in cause ? cause.code === 'ECONNRESET' || cause.code === 'ETIMEDOUT' : false);
+  };
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      let response = await fetch(url, {
+        ...options,
+        headers,
+      });
 
     // Se o token expirou (401), tentar renovar o token antes de redirecionar
     if (response.status === 401 && token && typeof window !== 'undefined') {
@@ -240,17 +249,14 @@ async function apiRequest<T>(
       throw new Error(errorMessage);
     }
 
-    return data;
-  } catch (error) {
-    // Se já é um erro de sessão expirada, apenas relança
-    if (error instanceof Error && error.message.includes('Sessão expirada')) {
+      return data;
+    } catch (error) {
+      if (attempt < maxAttempts && isGet && isNetworkError(error)) {
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+        continue;
+      }
       throw error;
     }
-    
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Erro desconhecido na requisição');
   }
 }
 
