@@ -368,7 +368,7 @@ export default function EditarProdutoPage() {
               type="text"
               value={formData.title}
               onChange={handleChange}
-              placeholder="Ex: Batata Frita, Bife Ancho"
+              placeholder="Adicione um título para o produto..."
               error={errors.title}
               required
             />
