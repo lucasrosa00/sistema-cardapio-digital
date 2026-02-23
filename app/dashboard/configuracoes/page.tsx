@@ -288,7 +288,7 @@ export default function ConfiguracoesPage() {
               </p>
             </div>
 
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Pedidos pela Mesa
               </label>
@@ -300,7 +300,7 @@ export default function ConfiguracoesPage() {
               <p className="text-xs text-gray-500 mt-2">
                 Quando habilitado, os clientes poderão fazer pedidos diretamente pelo cardápio digital
               </p>
-            </div>
+            </div> */}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
