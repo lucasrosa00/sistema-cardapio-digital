@@ -28,6 +28,7 @@ type Product = {
   images?: string[];
   active: boolean;
   order: number;
+  isAvailable?: boolean;
   availableAddons?: Array<{
     id: number;
     productAddonId: number;
@@ -136,6 +137,7 @@ export default function ProdutoDetalhesPage() {
                   images: prod.images || [],
                   active: prod.active,
                   order: prod.order,
+                  isAvailable: (prod as { isAvailable?: boolean }).isAvailable ?? true,
                   availableAddons: prod.availableAddons?.filter(addon => addon.active).map(addon => ({
                     id: addon.id,
                     productAddonId: addon.productAddonId,
@@ -165,6 +167,7 @@ export default function ProdutoDetalhesPage() {
                 images: prod.images || [],
                 active: prod.active,
                 order: prod.order,
+                isAvailable: (prod as { isAvailable?: boolean }).isAvailable ?? true,
                 availableAddons: prod.availableAddons?.map(addon => ({
                   id: addon.id,
                   productAddonId: addon.productAddonId,
@@ -317,7 +320,26 @@ export default function ProdutoDetalhesPage() {
 
       {/* Conteúdo */}
       <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className={`${config.darkMode ? 'bg-[#1F1F1F]' : 'bg-white'} rounded-lg shadow-lg overflow-hidden`}>
+        <div className={`relative ${config.darkMode ? 'bg-[#1F1F1F]' : 'bg-white'} rounded-lg shadow-lg overflow-hidden ${product.isAvailable === false ? 'opacity-95' : ''}`}>
+          {product.isAvailable === false && (
+            <div className={`absolute inset-0 z-10 flex items-center justify-center rounded-lg backdrop-blur-[3px] ${config.darkMode ? 'bg-black/35' : 'bg-white/80'}`}>
+              <div className={`flex flex-col items-center gap-4 px-8 py-6 rounded-2xl shadow-xl max-w-sm text-center ${config.darkMode ? 'bg-[#2a2a2a] border border-[#3F3F3F]' : 'bg-white border border-gray-100'}`}>
+                <div className={`flex items-center justify-center w-14 h-14 rounded-full ${config.darkMode ? 'bg-[#3F3F3F]' : 'bg-gray-100'}`}>
+                  <svg className={`w-7 h-7 ${config.darkMode ? 'text-gray-400' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                  </svg>
+                </div>
+                <div>
+                  <p className={`text-lg font-semibold mb-1 ${config.darkMode ? 'text-white' : 'text-gray-800'}`}>
+                    Indisponível
+                  </p>
+                  <p className={`text-sm ${config.darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Este produto não pode ser adicionado ao pedido no momento.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex flex-col md:flex-row">
             {/* Imagens do Produto */}
             {product.images && product.images.length > 0 && (
@@ -353,7 +375,7 @@ export default function ProdutoDetalhesPage() {
                     </div>
 
                     {/* Adicionais */}
-                    {product.availableAddons && product.availableAddons.length > 0 && (
+                    {product.availableAddons && product.availableAddons.length > 0 && product.isAvailable !== false && (
                       <div className="mt-4">
                         <ProductAddons
                           addons={product.availableAddons}
@@ -368,7 +390,7 @@ export default function ProdutoDetalhesPage() {
                       </div>
                     )}
 
-                    {allowOrders && (
+                    {allowOrders && product.isAvailable !== false && (
                       <Button
                         onClick={() => {
                           addItem({
@@ -400,7 +422,7 @@ export default function ProdutoDetalhesPage() {
                       {product.variations?.map((variation, idx) => (
                         <div
                           key={idx}
-                          onClick={() => allowOrders ? setSelectedVariation(variation.label) : undefined}
+                          onClick={() => allowOrders && product.isAvailable !== false ? setSelectedVariation(variation.label) : undefined}
                           className={`flex justify-between items-center p-3 rounded-lg border transition-colors cursor-pointer ${selectedVariation === variation.label
                             ? 'border-blue-500 bg-blue-50'
                             : config.darkMode
@@ -422,7 +444,7 @@ export default function ProdutoDetalhesPage() {
                     </div>
 
                     {/* Adicionais */}
-                    {product.availableAddons && product.availableAddons.length > 0 && (
+                    {product.availableAddons && product.availableAddons.length > 0 && product.isAvailable !== false && (
                       <div className="mt-4">
                         <ProductAddons
                           addons={product.availableAddons}
@@ -437,7 +459,7 @@ export default function ProdutoDetalhesPage() {
                       </div>
                     )}
 
-                    {allowOrders && (
+                    {allowOrders && product.isAvailable !== false && (
                       <Button
                         onClick={() => {
                           if (!selectedVariation) {

@@ -62,6 +62,7 @@ export default function CadastrarProdutoPage() {
       price: '',
       variations: [] as ProductVariation[],
       active: true,
+      isAvailable: true,
       order: String(calculatedMaxOrder + 1),
     };
   });
@@ -186,6 +187,7 @@ export default function CadastrarProdutoPage() {
         description: formData.description.trim(),
         priceType: formData.priceType,
         active: formData.active,
+        isAvailable: formData.isAvailable,
         images: [], // Não enviar mais base64, será feito upload separado
         order: selectedOrder,
       };
@@ -433,6 +435,25 @@ export default function CadastrarProdutoPage() {
               checked={formData.active}
               onChange={handleChange}
             />
+
+            <Select
+              label="Disponível para pedido"
+              name="isAvailable"
+              value={formData.isAvailable ? 'true' : 'false'}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  isAvailable: e.target.value === 'true',
+                }))
+              }
+              options={[
+                { value: 'true', label: 'Sim' },
+                { value: 'false', label: 'Não' },
+              ]}
+            />
+            <p className="text-xs text-gray-500 -mt-2">
+              Se &quot;Não&quot;, o produto continua visível no catálogo/cardápio (se ativo), mas não pode ser adicionado ao carrinho e aparece no final da listagem.
+            </p>
 
             <div className="flex gap-4 pt-4">
               <Button

@@ -20,6 +20,7 @@ const dtoToProduct = (dto: ProductDto): Product => ({
   images: dto.images || [],
   active: dto.active,
   order: dto.order,
+  isAvailable: dto.isAvailable ?? true,
 });
 
 interface ProductsState {
@@ -86,6 +87,7 @@ export const useProductsStore = create<ProductsState>()((set, get) => ({
         images: [], // Não enviar mais base64, será feito upload separado
         active: product.active,
         order: newOrder,
+        isAvailable: product.isAvailable ?? true,
       };
       console.log("product.priceType: ", product.priceType)
       if (product.priceType === 'variable') {
@@ -225,6 +227,7 @@ export const useProductsStore = create<ProductsState>()((set, get) => ({
           images: updates.images !== undefined ? updates.images : undefined,
           active: updates.active !== undefined ? updates.active : undefined,
           order: updates.order !== undefined ? updates.order : undefined,
+          isAvailable: updates.isAvailable !== undefined ? updates.isAvailable : undefined,
         };
 
         // Se priceType está sendo atualizado, ajustar price e variations

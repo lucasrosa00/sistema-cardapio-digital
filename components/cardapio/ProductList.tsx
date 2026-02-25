@@ -90,7 +90,14 @@ export function ProductList({
       <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {sortedSubcategoryIds.map((subcategoryId) => {
           const subcategory = subcategories.find((s) => s.id === subcategoryId);
-          const subcategoryProducts = productsBySubcategory[subcategoryId];
+          const subcategoryProducts = [...(productsBySubcategory[subcategoryId] || [])].sort(
+            (a, b) => {
+              const aUnavail = a.isAvailable === false ? 1 : 0;
+              const bUnavail = b.isAvailable === false ? 1 : 0;
+              if (aUnavail !== bUnavail) return aUnavail - bUnavail;
+              return (a.order || 0) - (b.order || 0);
+            }
+          );
           const isSelected = selectedSubcategoryId === subcategoryId;
 
           return (
@@ -129,6 +136,7 @@ export function ProductList({
                   }
                   const productUrl = `${url}${params.toString() ? `?${params.toString()}` : ''}`;
 
+                  const isUnavailable = product.isAvailable === false;
                   return (
                     <div
                       key={product.id}
@@ -148,6 +156,14 @@ export function ProductList({
                           <p className={`text-sm whitespace-pre-line ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                             {product.description}
                           </p>
+                          {isUnavailable && (
+                            <p className="flex items-center gap-1.5 text-sm font-medium text-red-500 mt-2">
+                              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                              </svg>
+                              Indisponível
+                            </p>
+                          )}
                         </div>
 
                         {/* Imagens do Produto */}
@@ -172,7 +188,7 @@ export function ProductList({
                               >
                                 {formatPrice(product)}
                               </div>
-                              {allowOrders && product.price && (
+                              {allowOrders && product.price && !isUnavailable && (
                                 <button
                                   onClick={(e) => {
                                     e.preventDefault();
@@ -201,7 +217,7 @@ export function ProductList({
                             </div>
 
                             {/* Adicionais */}
-                            {product.availableAddons && product.availableAddons.length > 0 && (
+                            {product.availableAddons && product.availableAddons.length > 0 && !isUnavailable && (
                               <div onClick={(e) => e.stopPropagation()}>
                                 <ProductAddons
                                   addons={product.availableAddons}
@@ -252,7 +268,7 @@ export function ProductList({
                             </div>
 
                             {/* Adicionais */}
-                            {product.availableAddons && product.availableAddons.length > 0 && (
+                            {product.availableAddons && product.availableAddons.length > 0 && !isUnavailable && (
                               <div className="mb-4" onClick={(e) => e.stopPropagation()}>
                                 <ProductAddons
                                   addons={product.availableAddons}
@@ -270,7 +286,7 @@ export function ProductList({
                               </div>
                             )}
 
-                            {allowOrders && (
+                            {allowOrders && !isUnavailable && (
                               <div className="flex justify-end">
                                 <button
                                   onClick={(e) => {

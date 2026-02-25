@@ -45,6 +45,7 @@ type Product = {
   images?: string[];
   active: boolean;
   order: number;
+  isAvailable?: boolean;
   availableAddons?: Array<{
     id: number;
     productAddonId: number;
@@ -121,6 +122,7 @@ export default function CardapioPublicoPage() {
         images: prod.images || [],
         active: prod.active,
         order: prod.order,
+        isAvailable: (prod as { isAvailable?: boolean }).isAvailable ?? true,
         availableAddons: prod.availableAddons?.filter(addon => addon.active).map(addon => ({
           id: addon.id,
           productAddonId: addon.productAddonId,
@@ -146,6 +148,7 @@ export default function CardapioPublicoPage() {
       images: prod.images || [],
       active: prod.active,
       order: prod.order,
+      isAvailable: (prod as { isAvailable?: boolean }).isAvailable ?? true,
       availableAddons: prod.availableAddons?.map(addon => ({
         id: addon.id,
         productAddonId: addon.productAddonId,

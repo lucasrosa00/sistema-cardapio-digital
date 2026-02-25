@@ -152,6 +152,7 @@ export interface ProductDto {
   images: string[] | null;
   active: boolean;
   order: number;
+  isAvailable?: boolean;
   availableAddons?: ProductAddonDto[] | null;
 }
 
@@ -166,6 +167,7 @@ export interface CreateProductDto {
   images: string[] | null;
   active: boolean;
   order: number;
+  isAvailable?: boolean;
 }
 
 export interface UpdateProductDto {
@@ -179,6 +181,7 @@ export interface UpdateProductDto {
   images?: string[] | null;
   active?: boolean | null;
   order?: number | null;
+  isAvailable?: boolean | null;
 }
 
 // ========== RESTAURANT ==========

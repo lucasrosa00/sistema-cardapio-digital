@@ -38,6 +38,7 @@ export interface Product {
   images?: string[];
   active: boolean;
   order: number;
+  isAvailable?: boolean;
   availableAddons?: Array<{
     id: number;
     productAddonId: number;
