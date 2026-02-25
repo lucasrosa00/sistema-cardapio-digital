@@ -39,6 +39,7 @@ export interface RestaurantConfigDto {
   openingHours: string | null;
   mapUrl: string | null;
   deliveryFee: number;
+  calculateDeliveryFee?: boolean;
 }
 
 export interface LoginResponseDto {
@@ -198,6 +199,7 @@ export interface UpdateRestaurantConfigDto {
   openingHours?: string | null;
   mapUrl?: string | null;
   deliveryFee?: number | null;
+  calculateDeliveryFee?: boolean | null;
 }
 
 // ========== PUBLIC MENU ==========

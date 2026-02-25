@@ -212,6 +212,7 @@ export default function ProdutoDetalhesPage() {
     whatsAppOrderEnabled: menu.restaurant.whatsAppOrderEnabled || false,
     whatsAppNumber: menu.restaurant.whatsAppNumber || null,
     deliveryFee: menu.restaurant.deliveryFee ?? 0,
+    calculateDeliveryFee: (menu.restaurant as { calculateDeliveryFee?: boolean }).calculateDeliveryFee ?? false,
   } : {
     restaurantName: defaultServiceLabel,
     mainColor: '#ff0000',
@@ -227,6 +228,7 @@ export default function ProdutoDetalhesPage() {
     whatsAppOrderEnabled: false,
     whatsAppNumber: null,
     deliveryFee: 0,
+    calculateDeliveryFee: false,
   };
 
   const formatPrice = (price: number) => {
@@ -488,6 +490,7 @@ export default function ProdutoDetalhesPage() {
           restaurantName={config.restaurantName}
           serviceType={config.serviceType}
           deliveryFee={config.deliveryFee}
+          calculateDeliveryFee={config.calculateDeliveryFee}
         />
       )}
     </div>

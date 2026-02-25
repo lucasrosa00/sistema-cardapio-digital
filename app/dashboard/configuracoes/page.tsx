@@ -35,6 +35,7 @@ export default function ConfiguracoesPage() {
     openingHours: '',
     mapUrl: '',
     deliveryFee: 0,
+    calculateDeliveryFee: false,
   });
 
   const [errors, setErrors] = useState<{ restaurantName?: string }>({});
@@ -62,6 +63,7 @@ export default function ConfiguracoesPage() {
             openingHours: config.openingHours || '',
             mapUrl: config.mapUrl || '',
             deliveryFee: config.deliveryFee ?? 0,
+            calculateDeliveryFee: config.calculateDeliveryFee ?? false,
           });
         } else {
           // Se não retornou config, usa valores padrão
@@ -80,6 +82,7 @@ export default function ConfiguracoesPage() {
             openingHours: '',
             mapUrl: '',
             deliveryFee: 0,
+            calculateDeliveryFee: false,
           });
         }
       }).catch((error) => {
@@ -100,6 +103,7 @@ export default function ConfiguracoesPage() {
           openingHours: '',
           mapUrl: '',
           deliveryFee: 0,
+          calculateDeliveryFee: false,
         });
       });
     }
@@ -142,6 +146,7 @@ export default function ConfiguracoesPage() {
         openingHours: formData.openingHours.trim() || null,
         mapUrl: formData.mapUrl.trim() || null,
         deliveryFee: formData.deliveryFee,
+        calculateDeliveryFee: formData.calculateDeliveryFee,
       });
 
       // Recarrega as configurações da API para garantir sincronização
@@ -163,6 +168,7 @@ export default function ConfiguracoesPage() {
           openingHours: updatedConfig.openingHours || '',
           mapUrl: updatedConfig.mapUrl || '',
           deliveryFee: updatedConfig.deliveryFee ?? 0,
+          calculateDeliveryFee: updatedConfig.calculateDeliveryFee ?? false,
         });
       }
 
@@ -329,26 +335,38 @@ export default function ConfiguracoesPage() {
                     Digite o número do WhatsApp com código do país e DDD (ex: 5511999999999)
                   </p>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Taxa de Entrega (R$)
-                    </label>
-                    <input
-                      type="number"
-                      name="deliveryFee"
-                      value={formData.deliveryFee}
-                      onChange={(e) => {
-                        const value = parseFloat(e.target.value) || 0;
-                        setFormData((prev) => ({ ...prev, deliveryFee: value }));
-                      }}
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    <Switch
+                      label="Calcular taxa de entrega com base nos produtos"
+                      checked={formData.calculateDeliveryFee}
+                      onChange={(checked) => setFormData((prev) => ({ ...prev, calculateDeliveryFee: checked }))}
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Valor da taxa de entrega. Use 0 para entrega grátis.
+                    <p className="text-xs text-gray-500 mt-2">
+                      Quando ativado, o frete será calculado conforme os produtos e o endereço. O cliente verá uma mensagem informando no carrinho.
                     </p>
                   </div>
+                  {!formData.calculateDeliveryFee && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Taxa de Entrega (R$)
+                      </label>
+                      <input
+                        type="number"
+                        name="deliveryFee"
+                        value={formData.deliveryFee}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || 0;
+                          setFormData((prev) => ({ ...prev, deliveryFee: value }));
+                        }}
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Valor da taxa de entrega. Use 0 para entrega grátis.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

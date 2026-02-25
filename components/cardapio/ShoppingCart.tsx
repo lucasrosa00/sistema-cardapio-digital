@@ -15,6 +15,7 @@ interface ShoppingCartProps {
   restaurantName?: string;
   serviceType?: 'Menu' | 'Catalog' | null;
   deliveryFee?: number;
+  calculateDeliveryFee?: boolean;
 }
 
 export function ShoppingCart({ 
@@ -23,7 +24,8 @@ export function ShoppingCart({
   whatsAppNumber = null,
   restaurantName = 'Restaurante',
   serviceType = 'Menu',
-  deliveryFee = 0
+  deliveryFee = 0,
+  calculateDeliveryFee = false,
 }: ShoppingCartProps) {
   const params = useParams();
   const slug = params.restaurantId as string;
@@ -48,7 +50,12 @@ export function ShoppingCart({
 
   const itemCount = getItemCount();
   const subtotal = getTotal();
-  const total = deliveryType === 'Entrega' ? subtotal + deliveryFee : subtotal;
+  const total =
+    deliveryType === 'Entrega'
+      ? calculateDeliveryFee
+        ? subtotal
+        : subtotal + deliveryFee
+      : subtotal;
 
   // Monta endereço curto a partir de address_components (evita "Região Imediata", "Região Geográfica" etc.)
   const getShortAddressFromPlace = (place: {
@@ -173,7 +180,10 @@ export function ShoppingCart({
     
     message += `*Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}*\n`;
     if (deliveryType === 'Entrega') {
-      if (deliveryFee === 0) {
+      console.log('calculateDeliveryFee', calculateDeliveryFee);
+      if (calculateDeliveryFee) {
+        message += `*Taxa de Entrega:* Será calculada com base nos produtos e no endereço\n`;
+      } else if (deliveryFee === 0) {
         message += `*Taxa de Entrega: Grátis*\n`;
       } else {
         message += `*Taxa de Entrega: R$ ${deliveryFee.toFixed(2).replace('.', ',')}*\n`;
@@ -525,8 +535,8 @@ export function ShoppingCart({
                         R$ {subtotal.toFixed(2).replace('.', ',')}
                       </span>
                     </div>
-                    {deliveryType === 'Entrega' && (
-                      <div className="flex justify-between items-center">
+                    {deliveryType === 'Entrega' && !calculateDeliveryFee && (
+                      <div className="flex justify-between items-center mb-0">
                         <span className="text-sm text-gray-600">Taxa de Entrega:</span>
                         {deliveryFee === 0 ? (
                           <span className="text-sm font-semibold text-green-600">
@@ -538,6 +548,11 @@ export function ShoppingCart({
                           </span>
                         )}
                       </div>
+                    )}
+                    {deliveryType === 'Entrega' && calculateDeliveryFee && (
+                      <p className="text-xs text-gray-500">
+                        O frete será calculado com base nos produtos selecionados e no seu endereço.
+                      </p>
                     )}
                     <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                       <span className="text-lg font-semibold text-gray-900">Total:</span>
@@ -744,8 +759,8 @@ export function ShoppingCart({
                         R$ {subtotal.toFixed(2).replace('.', ',')}
                       </span>
                     </div>
-                    {deliveryType === 'Entrega' && (
-                      <div className="flex justify-between items-center">
+                    {deliveryType === 'Entrega' && !calculateDeliveryFee && (
+                      <div className="flex justify-between items-center mb-0">
                         <span className="text-sm text-gray-600">Taxa de Entrega:</span>
                         {deliveryFee === 0 ? (
                           <span className="text-sm font-semibold text-green-600">
@@ -757,6 +772,11 @@ export function ShoppingCart({
                           </span>
                         )}
                       </div>
+                    )}
+                    {deliveryType === 'Entrega' && calculateDeliveryFee && (
+                      <p className="text-xs text-gray-500">
+                        O frete será calculado com base nos produtos selecionados e no seu endereço.
+                      </p>
                     )}
                     <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                       <span className="text-lg font-semibold text-gray-900">Total:</span>
