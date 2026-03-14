@@ -11,6 +11,8 @@ interface ProductAddonsProps {
   darkMode?: boolean;
   selectedAddons?: CartItemAddon[];
   onAddonsChange?: (addons: CartItemAddon[]) => void;
+  /** Quando true, exibe um toggle inicialmente fechado (ex.: listagem do menu). Quando false, adicionais sempre visíveis (ex.: detalhes do produto). */
+  collapsible?: boolean;
 }
 
 export function ProductAddons({
@@ -20,10 +22,12 @@ export function ProductAddons({
   darkMode = false,
   selectedAddons = [],
   onAddonsChange,
+  collapsible = false,
 }: ProductAddonsProps) {
   const [localSelectedAddons, setLocalSelectedAddons] = useState<CartItemAddon[]>(
     selectedAddons.map(a => ({ ...a }))
   );
+  const [isAddonsOpen, setIsAddonsOpen] = useState(false);
 
   // Sincronizar estado local com props quando selectedAddons mudar externamente
   // Usar JSON.stringify para comparar profundamente e evitar loops
@@ -127,16 +131,9 @@ export function ProductAddons({
     );
   };
 
-  return (
-    <div className="space-y-3">
-      <h3
-        className="text-base md:text-lg font-semibold"
-        style={{ color: mainColor }}
-      >
-        Adicionais disponíveis:
-      </h3>
-      <div className="space-y-2">
-        {addons.map((addon, index) => {
+  const addonsListContent = (
+    <div className="space-y-2">
+      {addons.map((addon, index) => {
           // Usar id como chave principal, com fallback para productAddonId e index
           const addonKey = addon.id || addon.productAddonId || index;
           const selected = isSelected(addon);
@@ -267,16 +264,76 @@ export function ProductAddons({
             </div>
           );
         })}
-      </div>
-      {!allowSelection && (
-        <p
-          className={`text-xs italic ${
-            darkMode ? 'text-gray-400' : 'text-gray-500'
+    </div>
+  );
+
+  const addonsFooter = !allowSelection ? (
+    <p
+      className={`text-xs italic ${
+        darkMode ? 'text-gray-400' : 'text-gray-500'
+      }`}
+    >
+      * Adicionais informativos. Pedidos não estão disponíveis no momento.
+    </p>
+  ) : null;
+
+  if (collapsible) {
+    return (
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setIsAddonsOpen((prev) => !prev)}
+          className={`w-full flex items-center justify-between gap-2 p-3 rounded-lg border transition-all text-left ${
+            darkMode
+              ? 'border-[#2F2F2F] bg-[#1A1A1A] hover:border-[#3F3F3F] hover:bg-[#222222]'
+              : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
           }`}
+          aria-expanded={isAddonsOpen}
         >
-          * Adicionais informativos. Pedidos não estão disponíveis no momento.
-        </p>
-      )}
+          <h3
+            className="text-base md:text-lg font-semibold"
+            style={{ color: mainColor }}
+          >
+            Adicionais disponíveis
+          </h3>
+          <span
+            className={`text-xs md:text-sm shrink-0 ${
+              darkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}
+          >
+            {isAddonsOpen ? 'Ocultar' : 'Clique para escolher'}
+          </span>
+          <svg
+            className={`w-5 h-5 shrink-0 transition-transform ${
+              darkMode ? 'text-gray-400' : 'text-gray-500'
+            } ${isAddonsOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {isAddonsOpen && (
+          <>
+            {addonsListContent}
+            {addonsFooter}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <h3
+        className="text-base md:text-lg font-semibold"
+        style={{ color: mainColor }}
+      >
+        Adicionais disponíveis:
+      </h3>
+      {addonsListContent}
+      {addonsFooter}
     </div>
   );
 }

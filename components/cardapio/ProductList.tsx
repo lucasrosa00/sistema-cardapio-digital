@@ -231,6 +231,7 @@ export function ProductList({
                                       [product.id]: addons,
                                     }));
                                   }}
+                                  collapsible
                                 />
                               </div>
                             )}
@@ -282,6 +283,7 @@ export function ProductList({
                                       [product.id]: addons,
                                     }));
                                   }}
+                                  collapsible
                                 />
                               </div>
                             )}
