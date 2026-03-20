@@ -320,7 +320,7 @@ export default function CardapioPublicoPage() {
         }
       } catch (error) {
         console.error('Erro ao carregar menu:', error);
-        setError('Restaurante não encontrado');
+        setError('Empresa não encontrada');
       } finally {
         setIsLoading(false);
       }
@@ -371,10 +371,10 @@ export default function CardapioPublicoPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Restaurante não encontrado
+            Empresa não encontrada
           </h1>
           <p className="text-gray-600">
-            O cardápio solicitado não está disponível.
+            O cardápio ou catálogo solicitado não está disponível.
           </p>
         </div>
       </div>

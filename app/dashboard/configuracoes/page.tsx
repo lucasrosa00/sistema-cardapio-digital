@@ -116,7 +116,7 @@ export default function ConfiguracoesPage() {
 
     // Validação
     if (!formData.restaurantName.trim()) {
-      setErrors({ restaurantName: 'O nome do restaurante é obrigatório' });
+      setErrors({ restaurantName: 'O nome da empresa é obrigatório' });
       return;
     }
 
@@ -124,7 +124,7 @@ export default function ConfiguracoesPage() {
     setSaved(false);
 
     if (!restaurantId) {
-      alert('Erro: Restaurante não identificado. Faça login novamente.');
+      alert('Erro: Empresa não identificada. Faça login novamente.');
       router.push('/login');
       setIsSubmitting(false);
       return;
@@ -236,10 +236,10 @@ export default function ConfiguracoesPage() {
               ← Voltar
             </Button>
             <h1 className="text-2xl font-bold text-gray-900">
-              Configurações do Restaurante
+              Configurações da empresa
             </h1>
             <p className="text-sm text-gray-600 mt-1">
-              Personalize a identidade visual do seu cardápio digital
+              Personalize a identidade visual do seu cardápio ou catálogo digital
             </p>
           </div>
 
@@ -253,12 +253,11 @@ export default function ConfiguracoesPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
-              label="Nome do Restaurante *"
+              label="Nome da Empresa *"
               name="restaurantName"
               type="text"
               value={formData.restaurantName}
               onChange={handleChange}
-              placeholder="Ex: Restaurante Exemplo"
               error={errors.restaurantName}
               required
             />
@@ -373,7 +372,7 @@ export default function ConfiguracoesPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Logo do Restaurante
+                Logo da Empresa
               </label>
               
               {formData.logo ? (
@@ -381,7 +380,7 @@ export default function ConfiguracoesPage() {
                   <div className="relative inline-block">
                     <img
                       src={formData.logo}
-                      alt="Logo do restaurante"
+                      alt="Logo da empresa"
                       className="max-w-xs max-h-32 object-contain rounded-lg border border-gray-300"
                     />
                     <button
@@ -490,7 +489,7 @@ export default function ConfiguracoesPage() {
                     className="text-lg font-semibold"
                     style={{ color: formData.mainColor }}
                   >
-                    {formData.restaurantName || 'Nome do Restaurante'}
+                    {formData.restaurantName || 'Nome da Empresa'}
                   </h4>
                 </div>
                 <div

@@ -199,7 +199,7 @@ export default function CadastrarProdutoPage() {
       }
 
       if (!restaurantId) {
-        alert('Erro: Restaurante não identificado. Faça login novamente.');
+        alert('Erro: Empresa não identificada. Faça login novamente.');
         router.push('/login');
         return;
       }

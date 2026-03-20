@@ -22,7 +22,7 @@ export function ShoppingCart({
   mainColor, 
   whatsAppOrderEnabled = false, 
   whatsAppNumber = null,
-  restaurantName = 'Restaurante',
+  restaurantName = 'Empresa',
   serviceType = 'Menu',
   deliveryFee = 0,
   calculateDeliveryFee = false,

@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Spinner } from '@/components/ui/Spinner';
+import { useRestaurantConfigStore } from '@/store/restaurantConfigStore';
+import { getCategoryTitlePlaceholder } from '@/lib/utils/serviceType';
 
 export default function EditarCategoriaPage() {
   const router = useRouter();
@@ -16,6 +18,9 @@ export default function EditarCategoriaPage() {
   const id = Number(params.id);
 
   const restaurantId = useAuthStore((state) => state.restaurantId);
+  const serviceType = useRestaurantConfigStore((state) =>
+    restaurantId ? state.configs[restaurantId]?.serviceType ?? 'Menu' : 'Menu'
+  );
   const { getCategoriesByRestaurant, loadCategories, isLoading } = useCategoriesStore();
   const updateCategory = useCategoriesStore((state) => state.updateCategory);
 
@@ -187,7 +192,7 @@ export default function EditarCategoriaPage() {
               type="text"
               value={formData.title}
               onChange={handleChange}
-              placeholder="Ex: Entradas, Pratos Principais, Bebidas"
+              placeholder={getCategoryTitlePlaceholder(serviceType)}
               error={errors.title}
               required
             />

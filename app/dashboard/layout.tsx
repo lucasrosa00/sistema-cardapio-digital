@@ -56,7 +56,7 @@ export default function DashboardLayout({
   
   const displayName = config?.restaurantName && config.restaurantName.trim() !== ''
     ? config.restaurantName
-    : (restaurantName || 'Restaurante');
+    : (restaurantName || 'Empresa');
   const logo = config?.logo || null;
 
   useEffect(() => {
@@ -80,7 +80,6 @@ export default function DashboardLayout({
       <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm h-16">
         <div className="h-full max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-full">
-            {/* Esquerda: Logo e Nome do Restaurante */}
             <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
               {logo && (
                 <img

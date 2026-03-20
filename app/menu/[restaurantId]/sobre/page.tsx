@@ -36,7 +36,7 @@ export default function SobreRestaurantePage() {
         setMenu(menuData);
       } catch (error) {
         console.error('Erro ao carregar informações do restaurante:', error);
-        setError('Restaurante não encontrado');
+        setError('Empresa não encontrada');
       } finally {
         setIsLoading(false);
       }
@@ -60,13 +60,13 @@ export default function SobreRestaurantePage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center px-4">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Restaurante não encontrado
+            Empresa não encontrada
           </h1>
           <button
             onClick={() => router.push(getBackUrl())}
             className="px-6 py-2 rounded-lg font-medium transition-colors bg-blue-500 text-white hover:bg-blue-600"
           >
-            Voltar ao Cardápio
+            Voltar ao Cardápio/Catálogo
           </button>
         </div>
       </div>

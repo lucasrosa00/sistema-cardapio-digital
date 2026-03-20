@@ -47,7 +47,7 @@ export function MenuHeader({
   const tableNumber = tableNumberFromParams || tableNumberFromCart || null;
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
-  
+
   const getSobreUrl = () => {
     return tableNumber ? `/menu/${slug}/sobre?mesa=${tableNumber}` : `/menu/${slug}/sobre`;
   };
@@ -150,8 +150,8 @@ export function MenuHeader({
                   <button
                     onClick={() => router.push(getSobreUrl())}
                     className={`ml-1.5 rounded-lg transition-colors ${darkMode ? 'hover:bg-[#2F2F2F] hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900 active:bg-gray-200'}`}
-                    title="Informações do Restaurante"
-                    aria-label="Ver informações do restaurante"
+                    title="Informações da empresa"
+                    aria-label="Ver informações da empresa"
                   >
                     <svg
                       className="w-5 h-5"
@@ -180,7 +180,7 @@ export function MenuHeader({
             <button
               onClick={() => router.push(backUrl)}
               className="px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-80 active:opacity-90 flex-shrink-0"
-              style={{ 
+              style={{
                 backgroundColor: mainColor,
                 color: '#ffffff'
               }}

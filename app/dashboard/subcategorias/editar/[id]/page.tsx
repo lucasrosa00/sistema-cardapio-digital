@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Spinner } from '@/components/ui/Spinner';
+import { useRestaurantConfigStore } from '@/store/restaurantConfigStore';
+import { getSubcategoryTitlePlaceholder } from '@/lib/utils/serviceType';
 
 export default function EditarSubcategoriaPage() {
   const router = useRouter();
@@ -17,6 +19,9 @@ export default function EditarSubcategoriaPage() {
   const id = Number(params.id);
 
   const restaurantId = useAuthStore((state) => state.restaurantId);
+  const serviceType = useRestaurantConfigStore((state) =>
+    restaurantId ? state.configs[restaurantId]?.serviceType ?? 'Menu' : 'Menu'
+  );
   const { getSubcategoriesByRestaurant, loadSubcategories, isLoading: isLoadingSubcategories } = useSubcategoriesStore();
   const updateSubcategory = useSubcategoriesStore((state) => state.updateSubcategory);
   const { getCategoriesByRestaurant, loadCategories, isLoading: isLoadingCategories } = useCategoriesStore();
@@ -229,7 +234,7 @@ export default function EditarSubcategoriaPage() {
               type="text"
               value={formData.title}
               onChange={handleChange}
-              placeholder="Ex: Porções, Grelhados, Sobremesas"
+              placeholder={getSubcategoryTitlePlaceholder(serviceType)}
               error={errors.title}
               required
             />

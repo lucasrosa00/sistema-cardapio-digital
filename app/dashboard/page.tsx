@@ -23,17 +23,17 @@ export default function DashboardPage() {
           const config = getConfig(restaurantId);
           // Prioriza o nome da API, se não tiver usa o do authStore
           if (config) {
-            setRestaurantName(config.restaurantName || restaurantNameFromAuth || 'Restaurante');
+            setRestaurantName(config.restaurantName || restaurantNameFromAuth || 'Empresa');
             setTableOrderEnabled(config.tableOrderEnabled);
           } else {
-            setRestaurantName(restaurantNameFromAuth || 'Restaurante');
+            setRestaurantName(restaurantNameFromAuth || 'Empresa');
             setTableOrderEnabled(false);
           }
         })
         .catch((error) => {
           console.error('Erro ao carregar configuração:', error);
           // Em caso de erro, usa o nome do authStore
-          setRestaurantName(restaurantNameFromAuth || 'Restaurante');
+          setRestaurantName(restaurantNameFromAuth || 'Empresa');
           setTableOrderEnabled(false);
         });
     }
@@ -48,16 +48,12 @@ export default function DashboardPage() {
               Dashboard
             </h1>
             <p className="text-gray-600 mt-1">
-              Bem-vindo, {restaurantName || 'Restaurante'}!
+              Bem-vindo, {restaurantName || 'Empresa'}!
             </p>
           </div>
 
           <div className="border-t border-gray-200 pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <p className="text-sm text-blue-600 font-medium">ID do Restaurante</p>
-                <p className="text-2xl font-bold text-blue-900 mt-1">{restaurantId}</p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-green-50 rounded-lg p-4">
                 <p className="text-sm text-green-600 font-medium">Nome</p>
                 <p className="text-lg font-semibold text-green-900 mt-1">{restaurantName}</p>

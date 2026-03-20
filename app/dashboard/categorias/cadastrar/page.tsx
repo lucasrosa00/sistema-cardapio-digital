@@ -8,10 +8,15 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { useRestaurantConfigStore } from '@/store/restaurantConfigStore';
+import { getCategoryTitlePlaceholder } from '@/lib/utils/serviceType';
 
 export default function CadastrarCategoriaPage() {
   const router = useRouter();
   const restaurantId = useAuthStore((state) => state.restaurantId);
+  const serviceType = useRestaurantConfigStore((state) =>
+    restaurantId ? state.configs[restaurantId]?.serviceType ?? 'Menu' : 'Menu'
+  );
   const addCategory = useCategoriesStore((state) => state.addCategory);
   const { getCategoriesByRestaurant, loadCategories } = useCategoriesStore();
   
@@ -91,7 +96,7 @@ export default function CadastrarCategoriaPage() {
     setIsSubmitting(true);
 
     if (!restaurantId) {
-      alert('Erro: Restaurante não identificado. Faça login novamente.');
+      alert('Erro: Empresa não identificada. Faça login novamente.');
       router.push('/login');
       setIsSubmitting(false);
       return;
@@ -161,7 +166,7 @@ export default function CadastrarCategoriaPage() {
               type="text"
               value={formData.title}
               onChange={handleChange}
-              placeholder="Ex: Entradas, Pratos Principais, Bebidas"
+              placeholder={getCategoryTitlePlaceholder(serviceType)}
               error={errors.title}
               required
             />

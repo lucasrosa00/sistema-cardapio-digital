@@ -6,6 +6,8 @@ import type { AddonDto, ProductAddonDto, UpdateAddonDto } from '@/lib/api/types'
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { useRestaurantConfigStore } from '@/store/restaurantConfigStore';
+import { getAddonNamePlaceholder } from '@/lib/utils/serviceType';
 
 interface ProductAddonsManagerProps {
   productId: number | null;
@@ -22,6 +24,9 @@ export const ProductAddonsManager: React.FC<ProductAddonsManagerProps> = ({
   restaurantId,
   showSelection = false, // Por padrão, não mostra seleção
 }) => {
+  const serviceType = useRestaurantConfigStore((state) =>
+    state.configs[restaurantId]?.serviceType ?? 'Menu'
+  );
   const [allAddons, setAllAddons] = useState<AddonDto[]>([]);
   const [availableAddons, setAvailableAddons] = useState<AddonDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -328,7 +333,7 @@ export const ProductAddonsManager: React.FC<ProductAddonsManagerProps> = ({
             label="Nome *"
             value={newAddon.name}
             onChange={(e) => setNewAddon({ ...newAddon, name: e.target.value })}
-            placeholder="Ex: Bacon, Cheddar, Topper"
+            placeholder={getAddonNamePlaceholder(serviceType)}
           />
 
           <div>

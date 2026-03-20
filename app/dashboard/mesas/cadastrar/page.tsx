@@ -32,7 +32,7 @@ export default function CadastrarMesaPage() {
     setIsSubmitting(true);
 
     if (!restaurantId) {
-      alert('Erro: Restaurante não identificado. Faça login novamente.');
+      alert('Erro: Empresa não identificada. Faça login novamente.');
       router.push('/login');
       setIsSubmitting(false);
       return;
