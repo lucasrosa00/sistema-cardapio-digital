@@ -281,7 +281,7 @@ export default function ProdutoDetalhesPage() {
               color: '#ffffff'
             }}
           >
-            Voltar ao Cardápio
+            Voltar ao Cardápio/Catálogo
           </button>
         </div>
       </div>
