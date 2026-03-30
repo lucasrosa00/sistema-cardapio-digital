@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { CartMenuSlugSync } from '@/components/cardapio/CartMenuSlugSync';
 import { restaurantService } from '@/lib/api/restaurantService';
 import { getServiceTypeLabel } from '@/lib/utils/serviceType';
 
@@ -32,11 +33,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default function MenuLayout({
+export default async function MenuLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ restaurantId: string }>;
 }) {
-  return <>{children}</>;
+  const { restaurantId } = await params;
+  return (
+    <>
+      <CartMenuSlugSync restaurantSlug={restaurantId} />
+      {children}
+    </>
+  );
 }
 

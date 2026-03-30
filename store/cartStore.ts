@@ -29,9 +29,12 @@ export interface CartItem {
 }
 
 interface CartState {
+  /** Slug do cardápio público ao qual o carrinho pertence; ao mudar, itens são limpos */
+  menuSlug: string | null;
   items: CartItem[];
   tableNumber: string | null;
   tableId: number | null;
+  syncMenuSlug: (slug: string) => void;
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
   removeItem: (productId: number, variationLabel?: string, addons?: CartItemAddon[], selectedOptions?: CartItemSelectedOption[]) => void;
   updateQuantity: (productId: number, quantity: number, variationLabel?: string, addons?: CartItemAddon[], selectedOptions?: CartItemSelectedOption[]) => void;
@@ -71,9 +74,16 @@ const createItemKey = (item: {
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
+      menuSlug: null,
       items: [],
       tableNumber: null,
       tableId: null,
+
+      syncMenuSlug: (slug) => {
+        const current = get().menuSlug ?? null;
+        if (current === slug) return;
+        set({ items: [], tableNumber: null, tableId: null, menuSlug: slug });
+      },
 
       addItem: (item) => {
         const items = get().items;
@@ -173,6 +183,38 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'cart-storage',
+      version: 1,
+      migrate: (persistedState) => {
+        if (
+          persistedState &&
+          typeof persistedState === 'object' &&
+          !Object.prototype.hasOwnProperty.call(persistedState, 'menuSlug')
+        ) {
+          return {
+            ...(persistedState as object),
+            items: [],
+            tableNumber: null,
+            tableId: null,
+            menuSlug: null,
+          };
+        }
+        return persistedState as object;
+      },
+      onRehydrateStorage: () => (state) => {
+        if (typeof window === 'undefined' || !state) return;
+        const m = window.location.pathname.match(/^\/menu\/([^/]+)/);
+        if (!m) return;
+        const slug = decodeURIComponent(m[1]);
+        const menuSlug = (state as { menuSlug?: string | null }).menuSlug ?? null;
+        if (menuSlug !== slug) {
+          useCartStore.setState({
+            items: [],
+            tableNumber: null,
+            tableId: null,
+            menuSlug: slug,
+          });
+        }
+      },
     }
   )
 );
