@@ -7,7 +7,12 @@ import { Product, Subcategory } from '@/lib/mockData';
 import { ProductImageCarousel } from './ProductImageCarousel';
 import { VariationSelectionModal } from './VariationSelectionModal';
 import { ProductAddons } from '@/components/ui/ProductAddons';
-import { useCartStore, type CartItemAddon } from '@/store/cartStore';
+import { useCartStore, type CartItemAddon, type CartItemSelectedOption } from '@/store/cartStore';
+import {
+  ProductOptionGroupsSelector,
+  areOptionGroupsComplete,
+} from '@/components/cardapio/ProductOptionGroupsSelector';
+import { productHasActiveOptionGroups } from '@/lib/utils/productOptionGroups';
 
 interface ProductListProps {
   products: Product[];
@@ -18,6 +23,7 @@ interface ProductListProps {
   formatPrice: (product: Product) => string;
   allowOrders?: boolean;
   darkMode?: boolean;
+  serviceType?: 'Menu' | 'Catalog' | null;
 }
 
 export function ProductList({
@@ -29,6 +35,7 @@ export function ProductList({
   formatPrice,
   allowOrders = false,
   darkMode = false,
+  serviceType = 'Menu',
 }: ProductListProps) {
   const params = useParams();
   const restaurantId = params.restaurantId as string;
@@ -39,6 +46,9 @@ export function ProductList({
   const [selectedProductForVariation, setSelectedProductForVariation] = useState<Product | null>(null);
   // Estado para gerenciar adicionais selecionados por produto
   const [selectedAddonsByProduct, setSelectedAddonsByProduct] = useState<Record<number, CartItemAddon[]>>({});
+  const [selectedOptionsByProduct, setSelectedOptionsByProduct] = useState<
+    Record<number, CartItemSelectedOption[]>
+  >({});
 
   // Scroll para subcategoria selecionada
   useEffect(() => {
@@ -137,6 +147,9 @@ export function ProductList({
                   const productUrl = `${url}${params.toString() ? `?${params.toString()}` : ''}`;
 
                   const isUnavailable = product.isAvailable === false;
+                  const hasOg = productHasActiveOptionGroups(product.optionGroups);
+                  const optSel = selectedOptionsByProduct[product.id] || [];
+                  const optionsOk = !hasOg || areOptionGroupsComplete(product.optionGroups || [], optSel);
                   return (
                     <div
                       key={product.id}
@@ -181,7 +194,7 @@ export function ProductList({
                       <div className={`px-4 pb-4 w-full ${darkMode ? 'border-t border-[#2F2F2F]' : 'border-t border-gray-100'}`}>
                         {product.priceType === 'unique' ? (
                           <div className="pt-4 space-y-4">
-                            <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center gap-2 flex-wrap">
                               <div
                                 className="text-xl font-bold"
                                 style={{ color: mainColor }}
@@ -193,6 +206,7 @@ export function ProductList({
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
+                                    if (hasOg && !optionsOk) return;
                                     const selectedAddons = selectedAddonsByProduct[product.id] || [];
                                     addItem({
                                       productId: product.id,
@@ -200,21 +214,45 @@ export function ProductList({
                                       price: product.price!,
                                       image: product.images?.[0],
                                       addons: selectedAddons.length > 0 ? selectedAddons : undefined,
+                                      selectedOptions: optSel.length > 0 ? optSel : undefined,
                                     });
-                                    // Limpar adicionais selecionados após adicionar ao carrinho
                                     setSelectedAddonsByProduct(prev => {
                                       const newState = { ...prev };
                                       delete newState[product.id];
                                       return newState;
                                     });
+                                    setSelectedOptionsByProduct(prev => {
+                                      const newState = { ...prev };
+                                      delete newState[product.id];
+                                      return newState;
+                                    });
                                   }}
-                                  className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
+                                  disabled={hasOg && !optionsOk}
+                                  className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                                   style={{ backgroundColor: mainColor }}
                                 >
-                                  Adicionar
+                                  {hasOg && !optionsOk ? 'Escolha as opções' : 'Adicionar'}
                                 </button>
                               )}
                             </div>
+
+                            {hasOg && !isUnavailable && product.optionGroups && (
+                              <div onClick={(e) => e.stopPropagation()} className="mt-2">
+                                <ProductOptionGroupsSelector
+                                  groups={product.optionGroups}
+                                  value={optSel}
+                                  onChange={(v) =>
+                                    setSelectedOptionsByProduct((prev) => ({
+                                      ...prev,
+                                      [product.id]: v,
+                                    }))
+                                  }
+                                  mainColor={mainColor}
+                                  darkMode={darkMode}
+                                  serviceType={serviceType}
+                                />
+                              </div>
+                            )}
 
                             {/* Adicionais */}
                             {product.availableAddons && product.availableAddons.length > 0 && !isUnavailable && (
@@ -299,7 +337,9 @@ export function ProductList({
                                   className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
                                   style={{ backgroundColor: mainColor }}
                                 >
-                                  Adicionar
+                                  {productHasActiveOptionGroups(product.optionGroups)
+                                    ? 'Escolher opções'
+                                    : 'Adicionar'}
                                 </button>
                               </div>
                             )}
@@ -320,8 +360,12 @@ export function ProductList({
           isOpen={!!selectedProductForVariation}
           onClose={() => {
             setSelectedProductForVariation(null);
-            // Limpar adicionais selecionados quando fechar o modal
             setSelectedAddonsByProduct(prev => {
+              const newState = { ...prev };
+              delete newState[selectedProductForVariation.id];
+              return newState;
+            });
+            setSelectedOptionsByProduct(prev => {
               const newState = { ...prev };
               delete newState[selectedProductForVariation.id];
               return newState;
@@ -333,7 +377,9 @@ export function ProductList({
           darkMode={darkMode}
           availableAddons={selectedProductForVariation.availableAddons}
           allowSelection={allowOrders}
-          onSelectVariation={(variation, addons) => {
+          optionGroups={selectedProductForVariation.optionGroups}
+          serviceType={serviceType}
+          onSelectVariation={(variation, addons, selectedOptions) => {
             addItem({
               productId: selectedProductForVariation.id,
               productTitle: selectedProductForVariation.title,
@@ -341,10 +387,15 @@ export function ProductList({
               variationLabel: variation.label,
               image: selectedProductForVariation.images?.[0],
               addons: addons,
+              selectedOptions: selectedOptions?.length ? selectedOptions : undefined,
             });
             setSelectedProductForVariation(null);
-            // Limpar adicionais selecionados após adicionar ao carrinho
             setSelectedAddonsByProduct(prev => {
+              const newState = { ...prev };
+              delete newState[selectedProductForVariation.id];
+              return newState;
+            });
+            setSelectedOptionsByProduct(prev => {
               const newState = { ...prev };
               delete newState[selectedProductForVariation.id];
               return newState;

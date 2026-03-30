@@ -6,7 +6,8 @@ import { useProductsStore } from '@/store/productsStore';
 import { useCategoriesStore } from '@/store/categoriesStore';
 import { useSubcategoriesStore } from '@/store/subcategoriesStore';
 import { useAuthStore } from '@/store/authStore';
-import { ProductVariation } from '@/lib/mockData';
+import { ProductVariation, type ProductOptionGroup } from '@/lib/mockData';
+import { validateProductOptionGroups } from '@/lib/utils/validateProductOptionGroups';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -14,6 +15,7 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { ProductVariations } from '@/components/ui/ProductVariations';
 import { ProductAddonsManager } from '@/components/ui/ProductAddonsManager';
+import { ProductOptionGroupsEditor } from '@/components/ui/ProductOptionGroupsEditor';
 
 export default function EditarProdutoPage() {
   const router = useRouter();
@@ -70,6 +72,7 @@ export default function EditarProdutoPage() {
     active: true,
     isAvailable: true,
     order: '1',
+    optionGroups: [] as ProductOptionGroup[],
   });
 
   // Estado para armazenar arquivos de imagem selecionados
@@ -128,6 +131,12 @@ export default function EditarProdutoPage() {
         active: product.active,
         isAvailable: product.isAvailable ?? true,
         order: String(product.order || 1),
+        optionGroups: product.optionGroups
+          ? product.optionGroups.map((g) => ({
+              ...g,
+              opcoes: g.opcoes.map((o) => ({ ...o })),
+            }))
+          : [],
       });
       // Carregar URLs das imagens já salvas para preview
       console.log("product.images: ", product.images)
@@ -191,6 +200,12 @@ export default function EditarProdutoPage() {
       newErrors.order = 'Selecione uma ordem válida';
     }
 
+    const optVal = validateProductOptionGroups(formData.optionGroups || []);
+    if (!optVal.valid) {
+      alert(optVal.error);
+      return;
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -215,6 +230,7 @@ export default function EditarProdutoPage() {
         isAvailable: formData.isAvailable,
         images: savedImageUrls, // Manter URLs das imagens já salvas
         order: selectedOrder,
+        optionGroups: formData.optionGroups,
       };
 
       if (formData.priceType === 'unique') {
@@ -467,6 +483,13 @@ export default function EditarProdutoPage() {
                 maxImages={10}
               />
             </div>
+
+            <ProductOptionGroupsEditor
+              value={formData.optionGroups}
+              onChange={(optionGroups) =>
+                setFormData((prev) => ({ ...prev, optionGroups }))
+              }
+            />
 
             <ProductAddonsManager
               productId={id}

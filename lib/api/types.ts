@@ -139,6 +139,39 @@ export interface UpdateAddonDto {
   productIds?: number[] | null;
 }
 
+/** Opção dentro de um grupo de seleção obrigatória (ex.: cor, sabor) */
+export interface ProductOptionDto {
+  id: number;
+  title: string | null;
+  extraPrice: number;
+  active: boolean;
+  order: number;
+}
+
+/** Grupo de seleção obrigatória no produto (ex.: escolher 1 cor entre N) */
+export interface ProductOptionGroupDto {
+  id: number;
+  title: string | null;
+  quantidadeItensObrigatorios: number;
+  opcoes: ProductOptionDto[] | null;
+  order: number;
+}
+
+export interface CreateProductOptionDto {
+  title: string | null;
+  extraPrice: number;
+  active: boolean;
+  order: number;
+}
+
+export interface CreateProductOptionGroupDto {
+  id?: number;
+  title: string | null;
+  quantidadeItensObrigatorios: number;
+  opcoes: (CreateProductOptionDto & { id?: number })[];
+  order: number;
+}
+
 export interface ProductDto {
   id: number;
   restaurantId: number;
@@ -154,6 +187,7 @@ export interface ProductDto {
   order: number;
   isAvailable?: boolean;
   availableAddons?: ProductAddonDto[] | null;
+  optionGroups?: ProductOptionGroupDto[] | null;
 }
 
 export interface CreateProductDto {
@@ -168,6 +202,7 @@ export interface CreateProductDto {
   active: boolean;
   order: number;
   isAvailable?: boolean;
+  optionGroups?: CreateProductOptionGroupDto[] | null;
 }
 
 export interface UpdateProductDto {
@@ -182,6 +217,7 @@ export interface UpdateProductDto {
   active?: boolean | null;
   order?: number | null;
   isAvailable?: boolean | null;
+  optionGroups?: CreateProductOptionGroupDto[] | null;
 }
 
 // ========== RESTAURANT ==========
@@ -257,12 +293,19 @@ export interface OrderItemAddonDto {
   quantity: number;
 }
 
+/** Opção escolhida em um grupo (pedido) */
+export interface OrderItemSelectedOptionDto {
+  optionGroupId: number;
+  optionId: number;
+}
+
 export interface OrderItemDto {
   productId: number;
   quantity: number;
   observations?: string;
   selectedVariation?: string;
   addons?: OrderItemAddonDto[] | null;
+  selectedOptions?: OrderItemSelectedOptionDto[] | null;
 }
 
 export interface CreateOrderDto {

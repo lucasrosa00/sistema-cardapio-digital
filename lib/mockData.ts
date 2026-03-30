@@ -20,9 +20,20 @@ export interface ProductVariation {
   price: number;
 }
 
-export interface ProductVariation {
-  label: string;
-  price: number;
+export interface ProductOption {
+  id?: number;
+  title: string;
+  extraPrice: number;
+  active: boolean;
+  order: number;
+}
+
+export interface ProductOptionGroup {
+  id?: number;
+  title: string;
+  quantidadeItensObrigatorios: number;
+  opcoes: ProductOption[];
+  order: number;
 }
 
 export interface Product {
@@ -47,6 +58,7 @@ export interface Product {
     extraPrice: number;
     active: boolean;
   }>;
+  optionGroups?: ProductOptionGroup[];
 }
 
 // Arrays mockados removidos - dados agora vêm da API

@@ -13,7 +13,14 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { ProductAddons } from '@/components/ui/ProductAddons';
 import { getServiceTypeLabel } from '@/lib/utils/serviceType';
-import type { CartItemAddon } from '@/store/cartStore';
+import { mapApiOptionGroups } from '@/lib/utils/mapApiOptionGroups';
+import type { CartItemAddon, CartItemSelectedOption } from '@/store/cartStore';
+import type { ProductOptionGroup } from '@/lib/mockData';
+import {
+  ProductOptionGroupsSelector,
+  areOptionGroupsComplete,
+} from '@/components/cardapio/ProductOptionGroupsSelector';
+import { productHasActiveOptionGroups } from '@/lib/utils/productOptionGroups';
 
 type Product = {
   id: number;
@@ -37,6 +44,7 @@ type Product = {
     extraPrice: number;
     active: boolean;
   }>;
+  optionGroups?: ProductOptionGroup[];
 };
 
 export default function ProdutoDetalhesPage() {
@@ -57,6 +65,7 @@ export default function ProdutoDetalhesPage() {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
   const [allowOrders, setAllowOrders] = useState(false);
   const [selectedAddons, setSelectedAddons] = useState<CartItemAddon[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<CartItemSelectedOption[]>([]);
 
   const addItem = useCartStore((state) => state.addItem);
   const getMenuFromStore = useMenuStore((state) => state.getMenu);
@@ -146,6 +155,7 @@ export default function ProdutoDetalhesPage() {
                     extraPrice: addon.extraPrice,
                     active: addon.active,
                   })) || [],
+                  optionGroups: mapApiOptionGroups(prod.optionGroups),
                 };
               }
             });
@@ -168,7 +178,7 @@ export default function ProdutoDetalhesPage() {
                 active: prod.active,
                 order: prod.order,
                 isAvailable: (prod as { isAvailable?: boolean }).isAvailable ?? true,
-                availableAddons: prod.availableAddons?.map(addon => ({
+                availableAddons: prod.availableAddons?.filter(addon => addon.active).map(addon => ({
                   id: addon.id,
                   productAddonId: addon.productAddonId,
                   name: addon.name,
@@ -176,6 +186,7 @@ export default function ProdutoDetalhesPage() {
                   extraPrice: addon.extraPrice,
                   active: addon.active,
                 })) || [],
+                optionGroups: mapApiOptionGroups(prod.optionGroups),
               };
             }
           });
@@ -288,6 +299,10 @@ export default function ProdutoDetalhesPage() {
     );
   }
 
+  const hasProductOg = productHasActiveOptionGroups(product.optionGroups);
+  const optionsComplete =
+    !hasProductOg || areOptionGroupsComplete(product.optionGroups || [], selectedOptions);
+
   return (
     <div
       className={`min-h-screen ${config.darkMode ? 'text-white' : 'bg-white text-gray-900'}`}
@@ -374,6 +389,19 @@ export default function ProdutoDetalhesPage() {
                       </span>
                     </div>
 
+                    {hasProductOg && product.optionGroups && product.isAvailable !== false && (
+                      <div className="mt-4">
+                        <ProductOptionGroupsSelector
+                          groups={product.optionGroups}
+                          value={selectedOptions}
+                          onChange={setSelectedOptions}
+                          mainColor={config.mainColor}
+                          darkMode={config.darkMode}
+                          serviceType={config.serviceType}
+                        />
+                      </div>
+                    )}
+
                     {/* Adicionais */}
                     {product.availableAddons && product.availableAddons.length > 0 && product.isAvailable !== false && (
                       <div className="mt-4">
@@ -393,30 +421,44 @@ export default function ProdutoDetalhesPage() {
                     {allowOrders && product.isAvailable !== false && (
                       <Button
                         onClick={() => {
+                          if (hasProductOg && !optionsComplete) return;
                           addItem({
                             productId: product.id,
                             productTitle: product.title,
                             price: product.price!,
                             image: product.images?.[0],
                             addons: selectedAddons.length > 0 ? selectedAddons : undefined,
+                            selectedOptions: selectedOptions.length > 0 ? selectedOptions : undefined,
                           });
                           setSelectedAddons([]);
+                          setSelectedOptions([]);
                         }}
                         variant="primary"
-                        className="w-full py-3 mt-4"
+                        disabled={hasProductOg && !optionsComplete}
+                        className="w-full py-3 mt-4 disabled:opacity-50"
                         style={{ backgroundColor: config.mainColor }}
                       >
-                        Adicionar
+                        {hasProductOg && !optionsComplete ? 'Complete as opções obrigatórias' : 'Adicionar'}
                       </Button>
                     )}
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {hasProductOg && product.optionGroups && (
+                      <ProductOptionGroupsSelector
+                        groups={product.optionGroups}
+                        value={selectedOptions}
+                        onChange={setSelectedOptions}
+                        mainColor={config.mainColor}
+                        darkMode={config.darkMode}
+                        serviceType={config.serviceType}
+                      />
+                    )}
                     <h3
                       className="text-base md:text-lg font-semibold"
                       style={{ color: config.mainColor }}
                     >
-                      Opções disponíveis:
+                      {config.serviceType === 'Catalog' ? 'Variações de preço' : 'Opções disponíveis:'}
                     </h3>
                     <div className="space-y-2">
                       {product.variations?.map((variation, idx) => (
@@ -462,6 +504,10 @@ export default function ProdutoDetalhesPage() {
                     {allowOrders && product.isAvailable !== false && (
                       <Button
                         onClick={() => {
+                          if (hasProductOg && !optionsComplete) {
+                            alert('Complete todas as seleções obrigatórias antes de adicionar.');
+                            return;
+                          }
                           if (!selectedVariation) {
                             alert('Por favor, selecione uma opção antes de adicionar o item ao pedido.');
                             return;
@@ -475,17 +521,23 @@ export default function ProdutoDetalhesPage() {
                               variationLabel: variation.label,
                               image: product.images?.[0],
                               addons: selectedAddons.length > 0 ? selectedAddons : undefined,
+                              selectedOptions: selectedOptions.length > 0 ? selectedOptions : undefined,
                             });
                             setSelectedVariation(null);
                             setSelectedAddons([]);
+                            setSelectedOptions([]);
                           }
                         }}
                         variant="primary"
-                        disabled={!selectedVariation}
-                        className="w-full py-3 mt-4"
+                        disabled={!selectedVariation || (hasProductOg && !optionsComplete)}
+                        className="w-full py-3 mt-4 disabled:opacity-50"
                         style={{ backgroundColor: config.mainColor }}
                       >
-                        {selectedVariation ? 'Adicionar' : 'Selecione uma opção'}
+                        {hasProductOg && !optionsComplete
+                          ? 'Complete as opções obrigatórias'
+                          : selectedVariation
+                            ? 'Adicionar'
+                            : 'Selecione uma opção'}
                       </Button>
                     )}
                   </div>

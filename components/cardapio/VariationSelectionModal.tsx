@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ProductAddons } from '@/components/ui/ProductAddons';
 import type { ProductAddonDto } from '@/lib/api/types';
-import type { CartItemAddon } from '@/store/cartStore';
+import type { ProductOptionGroup } from '@/lib/mockData';
+import type { CartItemAddon, CartItemSelectedOption } from '@/store/cartStore';
+import {
+  ProductOptionGroupsSelector,
+  areOptionGroupsComplete,
+} from '@/components/cardapio/ProductOptionGroupsSelector';
+import { productHasActiveOptionGroups } from '@/lib/utils/productOptionGroups';
 
 interface Variation {
   label: string;
@@ -20,7 +26,13 @@ interface VariationSelectionModalProps {
   darkMode?: boolean;
   availableAddons?: ProductAddonDto[];
   allowSelection?: boolean;
-  onSelectVariation: (variation: Variation, addons?: CartItemAddon[]) => void;
+  optionGroups?: ProductOptionGroup[];
+  serviceType?: 'Menu' | 'Catalog' | null;
+  onSelectVariation: (
+    variation: Variation,
+    addons?: CartItemAddon[],
+    selectedOptions?: CartItemSelectedOption[]
+  ) => void;
 }
 
 export function VariationSelectionModal({
@@ -32,18 +44,29 @@ export function VariationSelectionModal({
   darkMode = false,
   availableAddons = [],
   allowSelection = false,
+  optionGroups = [],
+  serviceType = 'Menu',
   onSelectVariation,
 }: VariationSelectionModalProps) {
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<CartItemAddon[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<CartItemSelectedOption[]>([]);
 
   if (!isOpen) return null;
 
+  const hasOg = productHasActiveOptionGroups(optionGroups);
+  const optionsOk = !hasOg || areOptionGroupsComplete(optionGroups, selectedOptions);
+
   const handleConfirm = () => {
-    if (selectedVariation) {
-      onSelectVariation(selectedVariation, selectedAddons.length > 0 ? selectedAddons : undefined);
+    if (selectedVariation && optionsOk) {
+      onSelectVariation(
+        selectedVariation,
+        selectedAddons.length > 0 ? selectedAddons : undefined,
+        selectedOptions.length > 0 ? selectedOptions : undefined
+      );
       setSelectedVariation(null);
       setSelectedAddons([]);
+      setSelectedOptions([]);
       onClose();
     }
   };
@@ -51,6 +74,7 @@ export function VariationSelectionModal({
   const handleClose = () => {
     setSelectedVariation(null);
     setSelectedAddons([]);
+    setSelectedOptions([]);
     onClose();
   };
 
@@ -71,9 +95,22 @@ export function VariationSelectionModal({
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-bold text-gray-900">
-              Selecionar opção - {productTitle}
+              {serviceType === 'Catalog' ? 'Monte seu item' : 'Escolha a opção'} — {productTitle}
             </h2>
           </div>
+
+          {hasOg && optionGroups.length > 0 && (
+            <div className="px-6 pt-4">
+              <ProductOptionGroupsSelector
+                groups={optionGroups}
+                value={selectedOptions}
+                onChange={setSelectedOptions}
+                mainColor={mainColor}
+                darkMode={false}
+                serviceType={serviceType}
+              />
+            </div>
+          )}
 
           {/* Variações */}
           <div className="px-6 py-4 space-y-2">
@@ -128,11 +165,11 @@ export function VariationSelectionModal({
             <Button
               variant="primary"
               onClick={handleConfirm}
-              disabled={!selectedVariation}
+              disabled={!selectedVariation || !optionsOk}
               className="flex-1"
               style={{ backgroundColor: mainColor }}
             >
-              Adicionar
+              {!optionsOk && hasOg ? 'Complete as escolhas' : 'Adicionar'}
             </Button>
           </div>
         </div>

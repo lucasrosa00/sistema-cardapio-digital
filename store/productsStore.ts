@@ -1,8 +1,7 @@
 import { create } from 'zustand';
-import { Product, ProductVariation } from '@/lib/mockData';
+import { Product, ProductVariation, type ProductOptionGroup } from '@/lib/mockData';
 import { productsService } from '@/lib/api/productsService';
-import type { ProductDto, ProductVariationDto } from '@/lib/api/types';
-
+import type { CreateProductOptionGroupDto, ProductDto, ProductVariationDto } from '@/lib/api/types';
 // Função helper para converter ProductDto para Product
 const dtoToProduct = (dto: ProductDto): Product => ({
   id: dto.id,
@@ -21,7 +20,38 @@ const dtoToProduct = (dto: ProductDto): Product => ({
   active: dto.active,
   order: dto.order,
   isAvailable: dto.isAvailable ?? true,
+  optionGroups: dto.optionGroups?.map((g) => ({
+    id: g.id,
+    title: g.title || '',
+    quantidadeItensObrigatorios: g.quantidadeItensObrigatorios,
+    order: g.order,
+    opcoes: (g.opcoes || []).map((o) => ({
+      id: o.id,
+      title: o.title || '',
+      extraPrice: o.extraPrice,
+      active: o.active,
+      order: o.order,
+    })),
+  })),
 });
+
+/** Serializa grupos de opções do formulário para a API */
+export function productOptionGroupsToApi(groups: ProductOptionGroup[] | undefined): CreateProductOptionGroupDto[] | null {
+  if (!groups?.length) return null;
+  return groups.map((g) => ({
+    ...(typeof g.id === 'number' ? { id: g.id } : {}),
+    title: g.title?.trim() ? g.title.trim() : null,
+    quantidadeItensObrigatorios: g.quantidadeItensObrigatorios,
+    order: g.order,
+    opcoes: g.opcoes.map((o) => ({
+      ...(typeof o.id === 'number' ? { id: o.id } : {}),
+      title: o.title?.trim() ? o.title.trim() : null,
+      extraPrice: o.extraPrice,
+      active: o.active,
+      order: o.order,
+    })),
+  }));
+}
 
 interface ProductsState {
   products: Product[];
@@ -88,6 +118,7 @@ export const useProductsStore = create<ProductsState>()((set, get) => ({
         active: product.active,
         order: newOrder,
         isAvailable: product.isAvailable ?? true,
+        optionGroups: productOptionGroupsToApi(product.optionGroups),
       };
       console.log("product.priceType: ", product.priceType)
       if (product.priceType === 'variable') {
@@ -184,6 +215,7 @@ export const useProductsStore = create<ProductsState>()((set, get) => ({
           images: updates.images !== undefined ? updates.images : undefined,
           active: updates.active !== undefined ? updates.active : undefined,
           order: newOrder,
+          optionGroups: updates.optionGroups !== undefined ? productOptionGroupsToApi(updates.optionGroups) : undefined,
         };
 
         // Se priceType está sendo atualizado, ajustar price e variations
@@ -228,6 +260,7 @@ export const useProductsStore = create<ProductsState>()((set, get) => ({
           active: updates.active !== undefined ? updates.active : undefined,
           order: updates.order !== undefined ? updates.order : undefined,
           isAvailable: updates.isAvailable !== undefined ? updates.isAvailable : undefined,
+          optionGroups: updates.optionGroups !== undefined ? productOptionGroupsToApi(updates.optionGroups) : undefined,
         };
 
         // Se priceType está sendo atualizado, ajustar price e variations

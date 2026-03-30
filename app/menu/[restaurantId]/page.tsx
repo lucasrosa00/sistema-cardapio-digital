@@ -13,6 +13,8 @@ import { MenuHeader } from '@/components/cardapio/MenuHeader';
 import { ShoppingCart } from '@/components/cardapio/ShoppingCart';
 import { Spinner } from '@/components/ui/Spinner';
 import { getServiceTypeLabel } from '@/lib/utils/serviceType';
+import { mapApiOptionGroups } from '@/lib/utils/mapApiOptionGroups';
+import type { ProductOptionGroup } from '@/lib/mockData';
 
 // Tipos locais para compatibilidade com componentes
 type Category = {
@@ -54,6 +56,7 @@ type Product = {
     extraPrice: number;
     active: boolean;
   }>;
+  optionGroups?: ProductOptionGroup[];
 };
 
 export default function CardapioPublicoPage() {
@@ -131,6 +134,7 @@ export default function CardapioPublicoPage() {
           extraPrice: addon.extraPrice,
           active: addon.active,
         })) || [],
+        optionGroups: mapApiOptionGroups(prod.optionGroups),
       })) || []
     ) || [];
 
@@ -149,7 +153,7 @@ export default function CardapioPublicoPage() {
       active: prod.active,
       order: prod.order,
       isAvailable: (prod as { isAvailable?: boolean }).isAvailable ?? true,
-      availableAddons: prod.availableAddons?.map(addon => ({
+      availableAddons: prod.availableAddons?.filter(addon => addon.active).map(addon => ({
         id: addon.id,
         productAddonId: addon.productAddonId,
         name: addon.name,
@@ -157,6 +161,7 @@ export default function CardapioPublicoPage() {
         extraPrice: addon.extraPrice,
         active: addon.active,
       })) || [],
+      optionGroups: mapApiOptionGroups(prod.optionGroups),
     }));
 
     // Combinar produtos de subcategorias e da categoria
@@ -488,6 +493,7 @@ export default function CardapioPublicoPage() {
                 mainColor={config.mainColor}
                 formatPrice={formatPrice}
                 allowOrders={allowOrders}
+                serviceType={config.serviceType}
               />
             )}
 

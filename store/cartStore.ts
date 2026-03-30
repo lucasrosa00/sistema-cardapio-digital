@@ -8,6 +8,15 @@ export interface CartItemAddon {
   quantity: number;
 }
 
+/** Opções escolhidas nos grupos obrigatórios do produto */
+export interface CartItemSelectedOption {
+  optionGroupId: number;
+  optionGroupTitle?: string;
+  optionId: number;
+  optionTitle: string;
+  extraPrice: number;
+}
+
 export interface CartItem {
   productId: number;
   productTitle: string;
@@ -16,6 +25,7 @@ export interface CartItem {
   variationLabel?: string;
   image?: string;
   addons?: CartItemAddon[];
+  selectedOptions?: CartItemSelectedOption[];
 }
 
 interface CartState {
@@ -23,8 +33,8 @@ interface CartState {
   tableNumber: string | null;
   tableId: number | null;
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
-  removeItem: (productId: number, variationLabel?: string, addons?: CartItemAddon[]) => void;
-  updateQuantity: (productId: number, quantity: number, variationLabel?: string, addons?: CartItemAddon[]) => void;
+  removeItem: (productId: number, variationLabel?: string, addons?: CartItemAddon[], selectedOptions?: CartItemSelectedOption[]) => void;
+  updateQuantity: (productId: number, quantity: number, variationLabel?: string, addons?: CartItemAddon[], selectedOptions?: CartItemSelectedOption[]) => void;
   clearCart: () => void;
   setTableNumber: (tableNumber: string | null) => void;
   setTableId: (tableId: number | null) => void;
@@ -33,18 +43,29 @@ interface CartState {
 }
 
 // Função auxiliar para criar chave única de um item do carrinho
-const createItemKey = (item: { productId: number; variationLabel?: string; addons?: CartItemAddon[] }): string => {
-  // Normalizar addons: undefined ou [] vira string vazia, senão ordena e cria chave
+const createItemKey = (item: {
+  productId: number;
+  variationLabel?: string;
+  addons?: CartItemAddon[];
+  selectedOptions?: CartItemSelectedOption[];
+}): string => {
   const normalizedAddons = item.addons && item.addons.length > 0 ? item.addons : [];
   const addonsKey = normalizedAddons
     .map(a => {
-      // Usar productAddonId se disponível, senão usar addonId (campo auxiliar) ou 0
       const addonId = a.productAddonId || (a as any).addonId || 0;
       return `${addonId}:${a.quantity}`;
     })
     .sort()
     .join(',');
-  return `${item.productId}-${item.variationLabel || 'unique'}-${addonsKey}`;
+  const optionsKey =
+    item.selectedOptions && item.selectedOptions.length > 0
+      ? item.selectedOptions
+          .slice()
+          .sort((a, b) => a.optionGroupId - b.optionGroupId || a.optionId - b.optionId)
+          .map((o) => `${o.optionGroupId}:${o.optionId}`)
+          .join(',')
+      : '';
+  return `${item.productId}-${item.variationLabel || 'unique'}-${addonsKey}-${optionsKey}`;
 };
 
 export const useCartStore = create<CartState>()(
@@ -60,6 +81,8 @@ export const useCartStore = create<CartState>()(
         const normalizedItem = {
           ...item,
           addons: item.addons && item.addons.length > 0 ? item.addons : undefined,
+          selectedOptions:
+            item.selectedOptions && item.selectedOptions.length > 0 ? item.selectedOptions : undefined,
         };
         const newItemKey = createItemKey(normalizedItem as CartItem);
         
@@ -78,12 +101,13 @@ export const useCartStore = create<CartState>()(
         }
       },
 
-      removeItem: (productId, variationLabel, addons?: CartItemAddon[]) => {
+      removeItem: (productId, variationLabel, addons?: CartItemAddon[], selectedOptions?: CartItemSelectedOption[]) => {
         const items = get().items;
         const targetKey = createItemKey({ 
           productId, 
           variationLabel, 
-          addons: addons || []
+          addons: addons || [],
+          selectedOptions: selectedOptions || [],
         });
         
         set({
@@ -93,9 +117,9 @@ export const useCartStore = create<CartState>()(
         });
       },
 
-      updateQuantity: (productId, quantity, variationLabel, addons?: CartItemAddon[]) => {
+      updateQuantity: (productId, quantity, variationLabel, addons?: CartItemAddon[], selectedOptions?: CartItemSelectedOption[]) => {
         if (quantity <= 0) {
-          get().removeItem(productId, variationLabel, addons);
+          get().removeItem(productId, variationLabel, addons, selectedOptions);
           return;
         }
 
@@ -103,7 +127,8 @@ export const useCartStore = create<CartState>()(
         const targetKey = createItemKey({ 
           productId, 
           variationLabel, 
-          addons: addons || []
+          addons: addons || [],
+          selectedOptions: selectedOptions || [],
         });
         
         const existingItemIndex = items.findIndex(
@@ -131,7 +156,10 @@ export const useCartStore = create<CartState>()(
 
       getTotal: () => {
         return get().items.reduce((total, item) => {
-          const itemBasePrice = item.price * item.quantity;
+          const optionsExtra =
+            item.selectedOptions?.reduce((s, o) => s + o.extraPrice, 0) || 0;
+          const unitWithOptions = item.price + optionsExtra;
+          const itemBasePrice = unitWithOptions * item.quantity;
           const addonsPrice = item.addons?.reduce((addonTotal, addon) => {
             return addonTotal + (addon.extraPrice * addon.quantity * item.quantity);
           }, 0) || 0;

@@ -164,6 +164,18 @@ export function ShoppingCart({
         message += ` (${item.variationLabel})`;
       }
       message += `\n   Quantidade: ${item.quantity}x\n`;
+
+      if (item.selectedOptions && item.selectedOptions.length > 0) {
+        message += `   Opções:\n`;
+        item.selectedOptions.forEach((opt) => {
+          const label = opt.optionGroupTitle ? `${opt.optionGroupTitle}: ${opt.optionTitle}` : opt.optionTitle;
+          message += `     - ${label}`;
+          if (opt.extraPrice > 0) {
+            message += ` (+ R$ ${opt.extraPrice.toFixed(2).replace('.', ',')})`;
+          }
+          message += `\n`;
+        });
+      }
       
       // Adicionais
       if (item.addons && item.addons.length > 0) {
@@ -173,8 +185,12 @@ export function ShoppingCart({
         });
       }
       
-      const itemSubtotal = item.price * item.quantity + (item.addons?.reduce((sum, addon) => sum + (addon.extraPrice * addon.quantity * item.quantity), 0) || 0);
-      message += `   Valor unitário: R$ ${item.price.toFixed(2).replace('.', ',')}\n`;
+      const optionsExtra = item.selectedOptions?.reduce((s, o) => s + o.extraPrice, 0) || 0;
+      const unitWithOptions = item.price + optionsExtra;
+      const itemSubtotal =
+        unitWithOptions * item.quantity +
+        (item.addons?.reduce((sum, addon) => sum + (addon.extraPrice * addon.quantity * item.quantity), 0) || 0);
+      message += `   Valor unitário: R$ ${unitWithOptions.toFixed(2).replace('.', ',')}\n`;
       message += `   Subtotal: R$ ${itemSubtotal.toFixed(2).replace('.', ',')}\n\n`;
     });
     
@@ -339,6 +355,12 @@ export function ShoppingCart({
             productAddonId: addon.productAddonId,
             quantity: addon.quantity,
           })) : undefined,
+          selectedOptions: item.selectedOptions?.length
+            ? item.selectedOptions.map((o) => ({
+                optionGroupId: o.optionGroupId,
+                optionId: o.optionId,
+              }))
+            : undefined,
         })),
       });
 
@@ -466,6 +488,26 @@ export function ShoppingCart({
                           {item.variationLabel && (
                             <p className="text-sm text-gray-500">{item.variationLabel}</p>
                           )}
+                          {item.selectedOptions && item.selectedOptions.length > 0 && (
+                            <div className="mt-1 space-y-0.5">
+                              {item.selectedOptions.map((opt, oi) => (
+                                <p key={oi} className="text-xs text-gray-600">
+                                  {opt.optionGroupTitle ? (
+                                    <>
+                                      <span className="font-medium">{opt.optionGroupTitle}:</span> {opt.optionTitle}
+                                    </>
+                                  ) : (
+                                    opt.optionTitle
+                                  )}
+                                  {opt.extraPrice > 0 && (
+                                    <span className="text-gray-500">
+                                      {' '}(+ R$ {opt.extraPrice.toFixed(2).replace('.', ',')})
+                                    </span>
+                                  )}
+                                </p>
+                              ))}
+                            </div>
+                          )}
                           {item.addons && item.addons.length > 0 && (
                             <div className="mt-2 space-y-1">
                               {item.addons.map((addon, addonIndex) => (
@@ -477,7 +519,12 @@ export function ShoppingCart({
                           )}
                           <div className="mt-1">
                             <p className="text-sm font-medium" style={{ color: mainColor }}>
-                              R$ {item.price.toFixed(2).replace('.', ',')}
+                              R${' '}
+                              {(
+                                item.price +
+                                (item.selectedOptions?.reduce((s, o) => s + o.extraPrice, 0) || 0)
+                              ).toFixed(2).replace('.', ',')}{' '}
+                              <span className="text-xs font-normal text-gray-500">/ unid.</span>
                             </p>
                             {item.addons && item.addons.length > 0 && (
                               <p className="text-xs text-gray-500">
@@ -488,20 +535,43 @@ export function ShoppingCart({
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variationLabel, item.addons)}
+                            onClick={() =>
+                              updateQuantity(
+                                item.productId,
+                                item.quantity - 1,
+                                item.variationLabel,
+                                item.addons,
+                                item.selectedOptions
+                              )
+                            }
                             className="text-gray-700 w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                           >
                             -
                           </button>
                           <span className="text-gray-700 w-8 text-center font-medium">{item.quantity}</span>
                           <button
-                            onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variationLabel, item.addons)}
+                            onClick={() =>
+                              updateQuantity(
+                                item.productId,
+                                item.quantity + 1,
+                                item.variationLabel,
+                                item.addons,
+                                item.selectedOptions
+                              )
+                            }
                             className="text-gray-700 w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                           >
                             +
                           </button>
                           <button
-                            onClick={() => removeItem(item.productId, item.variationLabel, item.addons)}
+                            onClick={() =>
+                              removeItem(
+                                item.productId,
+                                item.variationLabel,
+                                item.addons,
+                                item.selectedOptions
+                              )
+                            }
                             className="ml-2 text-red-500 hover:text-red-700"
                           >
                             <svg
