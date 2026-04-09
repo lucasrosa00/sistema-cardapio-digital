@@ -60,6 +60,7 @@ export default function CadastrarProdutoPage() {
       subcategoryId: '',
       title: '',
       description: '',
+      longDescription: '',
       priceType: 'unique' as 'unique' | 'variable',
       price: '',
       variations: [] as ProductVariation[],
@@ -194,6 +195,9 @@ export default function CadastrarProdutoPage() {
         subcategoryId: Number(formData.subcategoryId),
         title: formData.title.trim(),
         description: formData.description.trim(),
+        longDescription: formData.longDescription.trim()
+          ? formData.longDescription.trim()
+          : null,
         priceType: formData.priceType,
         active: formData.active,
         isAvailable: formData.isAvailable,
@@ -329,27 +333,32 @@ export default function CadastrarProdutoPage() {
               required
             />
 
+            <Input
+              label="Descrição *"
+              name="description"
+              type="text"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Resumo curto do produto (listagem e detalhe)"
+              error={errors.description}
+              required
+            />
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Descrição *
+                Descrição longa (opcional)
               </label>
               <textarea
-                name="description"
-                value={formData.description}
+                name="longDescription"
+                value={formData.longDescription}
                 onChange={handleChange}
-                placeholder="Descreva o produto..."
-                rows={4}
-                className={`
-                  w-full px-4 py-2 border rounded-lg
-                  focus:outline-none focus:ring-2 focus:ring-blue-500
-                  transition-colors
-                  ${errors.description ? 'border-red-500' : 'border-gray-300'}
-                `}
-                required
+                placeholder="Texto completo exibido apenas na página do produto..."
+                rows={6}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
               />
-              {errors.description && (
-                <p className="mt-1 text-sm text-red-500">{errors.description}</p>
-              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Não aparece na listagem do cardápio/catálogo, só no detalhe.
+              </p>
             </div>
 
             <div>

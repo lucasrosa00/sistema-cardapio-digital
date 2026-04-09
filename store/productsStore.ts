@@ -10,6 +10,7 @@ const dtoToProduct = (dto: ProductDto): Product => ({
   subcategoryId: dto.subcategoryId || 0,
   title: dto.title || '',
   description: dto.description || '',
+  longDescription: dto.longDescription || '',
   priceType: (dto.priceType as 'unique' | 'variable') || 'unique',
   price: dto.price || undefined,
   variations: dto.variations?.map((v: ProductVariationDto) => ({
@@ -113,6 +114,9 @@ export const useProductsStore = create<ProductsState>()((set, get) => ({
         subcategoryId: product.subcategoryId || null,
         title: product.title,
         description: product.description,
+        longDescription: product.longDescription?.trim()
+          ? product.longDescription.trim()
+          : null,
         priceType: product.priceType,
         images: [], // Não enviar mais base64, será feito upload separado
         active: product.active,
@@ -211,6 +215,8 @@ export const useProductsStore = create<ProductsState>()((set, get) => ({
           subcategoryId: updates.subcategoryId !== undefined ? updates.subcategoryId : undefined,
           title: updates.title !== undefined ? updates.title : undefined,
           description: updates.description !== undefined ? updates.description : undefined,
+          longDescription:
+            updates.longDescription !== undefined ? updates.longDescription : undefined,
           priceType: updates.priceType !== undefined ? updates.priceType : undefined,
           images: updates.images !== undefined ? updates.images : undefined,
           active: updates.active !== undefined ? updates.active : undefined,
@@ -255,6 +261,8 @@ export const useProductsStore = create<ProductsState>()((set, get) => ({
           subcategoryId: updates.subcategoryId !== undefined ? updates.subcategoryId : undefined,
           title: updates.title !== undefined ? updates.title : undefined,
           description: updates.description !== undefined ? updates.description : undefined,
+          longDescription:
+            updates.longDescription !== undefined ? updates.longDescription : undefined,
           priceType: updates.priceType !== undefined ? updates.priceType : undefined,
           images: updates.images !== undefined ? updates.images : undefined,
           active: updates.active !== undefined ? updates.active : undefined,

@@ -43,6 +43,8 @@ export interface Product {
   subcategoryId: number;
   title: string;
   description: string;
+  /** Descrição longa (detalhe do produto) */
+  longDescription?: string;
   priceType: 'unique' | 'variable';
   price?: number;
   variations?: ProductVariation[];

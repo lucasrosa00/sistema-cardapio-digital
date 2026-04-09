@@ -262,9 +262,6 @@ export default function ProdutosPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {product.title}
                       </td>
-                      {/* <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                        {product.description}
-                      </td> */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {getCategoryName(product.categoryId)}
                       </td>

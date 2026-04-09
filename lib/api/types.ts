@@ -179,6 +179,8 @@ export interface ProductDto {
   subcategoryId: number | null;
   title: string | null;
   description: string | null;
+  /** Descrição longa; exibida só na página do produto */
+  longDescription?: string | null;
   priceType: string | null;
   price: number | null;
   variations: ProductVariationDto[] | null;
@@ -195,6 +197,7 @@ export interface CreateProductDto {
   subcategoryId: number | null;
   title: string | null;
   description: string | null;
+  longDescription?: string | null;
   priceType: string | null;
   price: number | null;
   variations: ProductVariationDto[] | null;
@@ -210,6 +213,7 @@ export interface UpdateProductDto {
   subcategoryId?: number | null;
   title?: string | null;
   description?: string | null;
+  longDescription?: string | null;
   priceType?: string | null;
   price?: number | null;
   variations?: ProductVariationDto[] | null;

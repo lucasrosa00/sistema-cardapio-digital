@@ -29,6 +29,7 @@ type Product = {
   subcategoryId: number;
   title: string;
   description: string;
+  longDescription?: string;
   priceType: 'unique' | 'variable';
   price?: number;
   variations?: { label: string; price: number }[];
@@ -140,6 +141,7 @@ export default function ProdutoDetalhesPage() {
                   subcategoryId: prod.subcategoryId || sub.subcategory.id,
                   title: prod.title || '',
                   description: prod.description || '',
+                  longDescription: prod.longDescription?.trim() || undefined,
                   priceType: (prod.priceType as 'unique' | 'variable') || 'unique',
                   price: prod.price || undefined,
                   variations: prod.variations?.map(v => ({ label: v.label || '', price: v.price })),
@@ -171,6 +173,7 @@ export default function ProdutoDetalhesPage() {
                 subcategoryId: prod.subcategoryId || 0,
                 title: prod.title || '',
                 description: prod.description || '',
+                longDescription: prod.longDescription?.trim() || undefined,
                 priceType: (prod.priceType as 'unique' | 'variable') || 'unique',
                 price: prod.price || undefined,
                 variations: prod.variations?.map(v => ({ label: v.label || '', price: v.price })),
@@ -374,9 +377,20 @@ export default function ProdutoDetalhesPage() {
                 <h2 className={`text-xl md:text-2xl font-bold mb-3 ${config.darkMode ? 'text-white' : ''}`}>
                   {product.title}
                 </h2>
-                <p className={`text-sm md:text-base mb-6 ${config.darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {product.description}
-                </p>
+                {product.description.trim() ? (
+                  <p
+                    className={`text-sm whitespace-pre-wrap md:text-base mb-3 ${config.darkMode ? 'text-gray-300' : 'text-gray-600'}`}
+                  >
+                    {product.description}
+                  </p>
+                ) : null}
+                {product.longDescription?.trim() ? (
+                  <div
+                    className={`text-sm md:text-base mb-6 whitespace-pre-wrap ${config.darkMode ? 'text-gray-300' : 'text-gray-600'}`}
+                  >
+                    {product.longDescription}
+                  </div>
+                ) : null}
               </div>
 
               {/* Preço ou Variações */}
