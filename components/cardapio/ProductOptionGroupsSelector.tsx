@@ -163,7 +163,10 @@ export function ProductOptionGroupsSelector({
               </div>
               <div
                 className={
-                  isCatalog ? 'flex flex-wrap gap-2' : 'flex flex-col gap-2 w-full'
+                  isCatalog
+                    ? // Grid preenche a largura: células iguais por linha, sem “buraco” à direita
+                      'grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(100%,6.25rem),1fr))]'
+                    : 'flex flex-col gap-2 w-full'
                 }
               >
                 {opts.map((opt) => {
@@ -177,8 +180,9 @@ export function ProductOptionGroupsSelector({
                       disabled={disabled}
                       onClick={() => toggleOption(group, oid, opt.title, opt.extraPrice, maxPick)}
                       className={`
-                        px-3 py-2 rounded-lg text-sm font-medium transition-all border text-left
-                        ${isCatalog ? '' : 'w-full'}
+                        px-2 py-2 rounded-lg text-sm font-medium transition-all border
+                        min-h-[2.75rem]
+                        ${isCatalog ? 'w-full text-center flex flex-col items-center justify-center min-w-0' : 'w-full text-left'}
                         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'}
                         ${
                           selected
@@ -196,7 +200,7 @@ export function ProductOptionGroupsSelector({
                           : undefined
                       }
                     >
-                      <span className="block">{opt.title}</span>
+                      <span className={`block ${isCatalog ? 'break-words leading-tight' : ''}`}>{opt.title}</span>
                       {opt.extraPrice > 0 && (
                         <span className={`text-xs mt-0.5 block ${selected && !darkMode ? 'text-white/90' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           + R$ {opt.extraPrice.toFixed(2).replace('.', ',')}

@@ -37,6 +37,7 @@ export function ProductList({
   darkMode = false,
   serviceType = 'Menu',
 }: ProductListProps) {
+  const isCatalog = serviceType === 'Catalog';
   const params = useParams();
   const restaurantId = params.restaurantId as string;
   const tableNumberFromUrl = params.tableNumber as string | undefined;
@@ -169,6 +170,12 @@ export function ProductList({
                           <p className={`text-sm whitespace-pre-line ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                             {product.description}
                           </p>
+                          <span
+                            className="mt-2 inline-block text-sm font-medium underline underline-offset-2"
+                            style={{ color: mainColor }}
+                          >
+                            Ver detalhes
+                          </span>
                           {isUnavailable && (
                             <p className="flex items-center gap-1.5 text-sm font-medium text-red-500 mt-2">
                               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -193,7 +200,7 @@ export function ProductList({
                       {/* Preço ou Variações - Ocupa 100% da largura */}
                       <div className={`px-4 pb-4 w-full ${darkMode ? 'border-t border-[#2F2F2F]' : 'border-t border-gray-100'}`}>
                         {product.priceType === 'unique' ? (
-                          <div className="pt-4 space-y-4">
+                          <div className={`pt-4 ${isCatalog ? '' : 'space-y-4'}`}>
                             <div className="flex justify-between items-center gap-2 flex-wrap">
                               <div
                                 className="text-xl font-bold"
@@ -202,41 +209,52 @@ export function ProductList({
                                 {formatPrice(product)}
                               </div>
                               {allowOrders && product.price && !isUnavailable && (
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (hasOg && !optionsOk) return;
-                                    const selectedAddons = selectedAddonsByProduct[product.id] || [];
-                                    addItem({
-                                      productId: product.id,
-                                      productTitle: product.title,
-                                      price: product.price!,
-                                      image: product.images?.[0],
-                                      addons: selectedAddons.length > 0 ? selectedAddons : undefined,
-                                      selectedOptions: optSel.length > 0 ? optSel : undefined,
-                                    });
-                                    setSelectedAddonsByProduct(prev => {
-                                      const newState = { ...prev };
-                                      delete newState[product.id];
-                                      return newState;
-                                    });
-                                    setSelectedOptionsByProduct(prev => {
-                                      const newState = { ...prev };
-                                      delete newState[product.id];
-                                      return newState;
-                                    });
-                                  }}
-                                  disabled={hasOg && !optionsOk}
-                                  className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  style={{ backgroundColor: mainColor }}
-                                >
-                                  {hasOg && !optionsOk ? 'Escolha as opções' : 'Adicionar'}
-                                </button>
+                                isCatalog ? (
+                                  <Link
+                                    href={productUrl}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90 inline-block text-center"
+                                    style={{ backgroundColor: mainColor }}
+                                  >
+                                    Adicionar
+                                  </Link>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (hasOg && !optionsOk) return;
+                                      const selectedAddons = selectedAddonsByProduct[product.id] || [];
+                                      addItem({
+                                        productId: product.id,
+                                        productTitle: product.title,
+                                        price: product.price!,
+                                        image: product.images?.[0],
+                                        addons: selectedAddons.length > 0 ? selectedAddons : undefined,
+                                        selectedOptions: optSel.length > 0 ? optSel : undefined,
+                                      });
+                                      setSelectedAddonsByProduct(prev => {
+                                        const newState = { ...prev };
+                                        delete newState[product.id];
+                                        return newState;
+                                      });
+                                      setSelectedOptionsByProduct(prev => {
+                                        const newState = { ...prev };
+                                        delete newState[product.id];
+                                        return newState;
+                                      });
+                                    }}
+                                    disabled={hasOg && !optionsOk}
+                                    className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    style={{ backgroundColor: mainColor }}
+                                  >
+                                    {hasOg && !optionsOk ? 'Escolha as opções' : 'Adicionar'}
+                                  </button>
+                                )
                               )}
                             </div>
 
-                            {hasOg && !isUnavailable && product.optionGroups && (
+                            {!isCatalog && hasOg && !isUnavailable && product.optionGroups && (
                               <div onClick={(e) => e.stopPropagation()} className="mt-2">
                                 <ProductOptionGroupsSelector
                                   groups={product.optionGroups}
@@ -255,93 +273,119 @@ export function ProductList({
                             )}
 
                             {/* Adicionais */}
-                            {product.availableAddons && product.availableAddons.length > 0 && !isUnavailable && (
-                              <div onClick={(e) => e.stopPropagation()}>
-                                <ProductAddons
-                                  addons={product.availableAddons}
-                                  allowSelection={allowOrders}
-                                  mainColor={mainColor}
-                                  darkMode={darkMode}
-                                  selectedAddons={selectedAddonsByProduct[product.id] || []}
-                                  onAddonsChange={(addons) => {
-                                    setSelectedAddonsByProduct(prev => ({
-                                      ...prev,
-                                      [product.id]: addons,
-                                    }));
-                                  }}
-                                  collapsible
-                                />
-                              </div>
-                            )}
+                            {!isCatalog &&
+                              product.availableAddons &&
+                              product.availableAddons.length > 0 &&
+                              !isUnavailable && (
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <ProductAddons
+                                    addons={product.availableAddons}
+                                    allowSelection={allowOrders}
+                                    mainColor={mainColor}
+                                    darkMode={darkMode}
+                                    selectedAddons={selectedAddonsByProduct[product.id] || []}
+                                    onAddonsChange={(addons) => {
+                                      setSelectedAddonsByProduct(prev => ({
+                                        ...prev,
+                                        [product.id]: addons,
+                                      }));
+                                    }}
+                                    collapsible
+                                  />
+                                </div>
+                              )}
                           </div>
                         ) : (
                           <div className="pt-4">
-                            <div className="space-y-2 mb-4">
-                              <p
-                                className="text-sm font-medium"
-                                style={{ color: mainColor }}
-                              >
-                                Opções disponíveis:
-                              </p>
-                              <div className="space-y-1">
-                                {product.variations?.map((variation, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="flex justify-between items-center"
-                                  >
-                                    <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                      {variation.label}
-                                    </span>
-                                    <span
-                                      className="font-semibold"
-                                      style={{ color: mainColor }}
-                                    >
-                                      R${' '}
-                                      {variation.price
-                                        .toFixed(2)
-                                        .replace('.', ',')}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Adicionais */}
-                            {product.availableAddons && product.availableAddons.length > 0 && !isUnavailable && (
-                              <div className="mb-4" onClick={(e) => e.stopPropagation()}>
-                                <ProductAddons
-                                  addons={product.availableAddons}
-                                  allowSelection={allowOrders}
-                                  mainColor={mainColor}
-                                  darkMode={darkMode}
-                                  selectedAddons={selectedAddonsByProduct[product.id] || []}
-                                  onAddonsChange={(addons) => {
-                                    setSelectedAddonsByProduct(prev => ({
-                                      ...prev,
-                                      [product.id]: addons,
-                                    }));
-                                  }}
-                                  collapsible
-                                />
-                              </div>
-                            )}
-
-                            {allowOrders && !isUnavailable && (
-                              <div className="flex justify-end">
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setSelectedProductForVariation(product);
-                                  }}
-                                  className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
-                                  style={{ backgroundColor: mainColor }}
+                            {isCatalog ? (
+                              <div className="flex justify-between items-center gap-2 flex-wrap">
+                                <div
+                                  className="text-xl font-bold"
+                                  style={{ color: mainColor }}
                                 >
-                                  {productHasActiveOptionGroups(product.optionGroups)
-                                    ? 'Escolher opções'
-                                    : 'Adicionar'}
-                                </button>
+                                  {formatPrice(product)}
+                                </div>
+                                {allowOrders && !isUnavailable && (
+                                  <Link
+                                    href={productUrl}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90 inline-block text-center"
+                                    style={{ backgroundColor: mainColor }}
+                                  >
+                                    Adicionar
+                                  </Link>
+                                )}
                               </div>
+                            ) : (
+                              <>
+                                <div className="space-y-2 mb-4">
+                                  <p
+                                    className="text-sm font-medium"
+                                    style={{ color: mainColor }}
+                                  >
+                                    Opções disponíveis:
+                                  </p>
+                                  <div className="space-y-1">
+                                    {product.variations?.map((variation, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="flex justify-between items-center"
+                                      >
+                                        <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                          {variation.label}
+                                        </span>
+                                        <span
+                                          className="font-semibold"
+                                          style={{ color: mainColor }}
+                                        >
+                                          R${' '}
+                                          {variation.price
+                                            .toFixed(2)
+                                            .replace('.', ',')}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Adicionais */}
+                                {product.availableAddons && product.availableAddons.length > 0 && !isUnavailable && (
+                                  <div className="mb-4" onClick={(e) => e.stopPropagation()}>
+                                    <ProductAddons
+                                      addons={product.availableAddons}
+                                      allowSelection={allowOrders}
+                                      mainColor={mainColor}
+                                      darkMode={darkMode}
+                                      selectedAddons={selectedAddonsByProduct[product.id] || []}
+                                      onAddonsChange={(addons) => {
+                                        setSelectedAddonsByProduct(prev => ({
+                                          ...prev,
+                                          [product.id]: addons,
+                                        }));
+                                      }}
+                                      collapsible
+                                    />
+                                  </div>
+                                )}
+
+                                {allowOrders && !isUnavailable && (
+                                  <div className="flex justify-end">
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setSelectedProductForVariation(product);
+                                      }}
+                                      className="px-4 py-2 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
+                                      style={{ backgroundColor: mainColor }}
+                                    >
+                                      {productHasActiveOptionGroups(product.optionGroups)
+                                        ? 'Escolher opções'
+                                        : 'Adicionar'}
+                                    </button>
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
                         )}
